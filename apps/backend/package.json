@@ -5,24 +5,15 @@
   "nx": {
     "targets": {
       "build": {
-        "executor": "@nx/js:swc",
-        "outputs": [
-          "{options.outputPath}"
-        ],
+        "executor": "nx:run-commands",
         "options": {
-          "main": "apps/backend/src/main.ts",
-          "outputPath": "dist/apps/backend",
-          "tsConfig": "apps/backend/tsconfig.app.json"
+          "command": "call scripts\\install-backend.bat"
         }
       },
-      "serve-static": {
-        "executor": "@nx/web:file-server",
-        "dependsOn": [
-          "build"
-        ],
+      "serve": {
+        "executor": "nx:run-commands",
         "options": {
-          "buildTarget": "@mono-repo-skeleton/backend:build",
-          "spa": true
+          "command": "call scripts\\run-backend.bat"
         }
       }
     }

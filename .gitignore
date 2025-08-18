@@ -42,3 +42,21 @@ Thumbs.db
 .nx/workspace-data
 .cursor/rules/nx-rules.mdc
 .github/instructions/nx.instructions.md
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.mypy_cache/
+.pytest_cache/
+.env
+.env.*
+# Poetry
+poetry.lock
+# pip-tools
+requirements*.txt
+
+# Python egg-info
+*.egg-info/

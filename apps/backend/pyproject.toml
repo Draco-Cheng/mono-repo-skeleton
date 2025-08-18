@@ -1,0 +1,14 @@
+[project]
+name = "backend"
+version = "0.1.0"
+description = "FastAPI backend for Nx monorepo"
+authors = ["Your Name <your@email.com>"]
+dependencies = [
+    "fastapi>=0.111.0",
+    "uvicorn>=0.30.0"
+]
+requires-python = ">=3.10"
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
