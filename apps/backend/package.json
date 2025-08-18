@@ -1,0 +1,30 @@
+{
+  "name": "@mono-repo-skeleton/backend",
+  "version": "0.0.1",
+  "private": true,
+  "nx": {
+    "targets": {
+      "build": {
+        "executor": "@nx/js:swc",
+        "outputs": [
+          "{options.outputPath}"
+        ],
+        "options": {
+          "main": "apps/backend/src/main.ts",
+          "outputPath": "dist/apps/backend",
+          "tsConfig": "apps/backend/tsconfig.app.json"
+        }
+      },
+      "serve-static": {
+        "executor": "@nx/web:file-server",
+        "dependsOn": [
+          "build"
+        ],
+        "options": {
+          "buildTarget": "@mono-repo-skeleton/backend:build",
+          "spa": true
+        }
+      }
+    }
+  }
+}
