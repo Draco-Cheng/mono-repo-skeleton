@@ -1,36 +1,94 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Frontend (Next.js) – Nx Monorepo Example
 
-## Getting Started
+This is the frontend application for the Nx monorepo, built with [Next.js](https://nextjs.org/) and TypeScript. It demonstrates integration with a FastAPI backend and uses modern best practices for monorepo development.
 
-First, run the development server:
+---
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## Features
+
+- **Next.js 15+** with App Router
+- TypeScript, CSS Modules
+- API requests proxied to backend via `/api/*` (see `next.config.ts`)
+- Fully integrated with Nx workspace
+- Simple, clean UI that fetches backend data
+- All configuration and API endpoints are maintainable and easy to update
+
+---
+
+## Project Structure
+
+```
+apps/frontend/
+├── public/                # Static assets
+├── src/
+│   └── app/
+│       ├── config.ts      # Frontend API config (API_PREFIX)
+│       ├── layout.tsx     # Minimal root layout
+│       ├── page.tsx       # Main page, fetches backend API
+│       └── page.module.css# CSS module for main page
+├── next.config.ts         # Next.js config (API proxy rewrites)
+├── package.json
+├── tsconfig.json
+└── README.md
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+---
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Development
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### 1. Install dependencies
 
-## Learn More
+From the monorepo root:
+```sh
+npm install
+```
 
-To learn more about Next.js, take a look at the following resources:
+### 2. Start the backend
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+From the monorepo root:
+```sh
+npx nx serve backend
+```
+or
+```sh
+scripts\run-backend.bat
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### 3. Start the frontend
 
-## Deploy on Vercel
+From the monorepo root:
+```sh
+npx nx serve frontend
+```
+or from `apps/frontend`:
+```sh
+npm run dev
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+The app will be available at [http://localhost:3000](http://localhost:3000).
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+---
+
+## API Integration
+
+- All frontend API requests should use the prefix defined in [`src/app/config.ts`](src/app/config.ts):  
+  ```ts
+  export const API_PREFIX = "/api";
+  ```
+- During development, `/api/*` requests are proxied to the backend (see [`next.config.ts`](next.config.ts)).
+- In production, the frontend expects the backend to be available at the same domain or via a reverse proxy.
+
+---
+
+## Customization
+
+- UI styles are managed via CSS modules (`page.module.css`).
+- To add more API endpoints, update both the backend and frontend config as needed.
+
+---
+
+## References
+
+- [Next.js Documentation](https://nextjs.org/)
+- [Nx Documentation](https://nx.dev)
+- [FastAPI Documentation](https://fastapi.tiangolo.com/)
