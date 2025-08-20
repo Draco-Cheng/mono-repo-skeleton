@@ -1,0 +1,69 @@
+.root {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #e0e7ff 0%, #f0fdfa 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-family: Inter, sans-serif;
+}
+
+.card {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+  padding: 40px;
+  min-width: 340px;
+  max-width: 400px;
+  text-align: center;
+}
+
+.title {
+  font-size: 32px;
+  font-weight: 700;
+  margin-bottom: 12px;
+  color: #2563eb;
+  letter-spacing: -1px;
+}
+
+.subtitle {
+  color: #64748b;
+  margin-bottom: 32px;
+}
+
+.apiResult {
+  background: #f1f5f9;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 24px;
+  font-size: 18px;
+  color: #0f172a;
+  font-family: monospace;
+  min-height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.button {
+  background: linear-gradient(90deg, #2563eb 0%, #06b6d4 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 12px 32px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(37,99,235,0.08);
+  transition: background 0.2s;
+}
+
+.button:active {
+  filter: brightness(0.95);
+}
+
+.footer {
+  margin-top: 40px;
+  color: #64748b;
+  font-size: 14px;
+}

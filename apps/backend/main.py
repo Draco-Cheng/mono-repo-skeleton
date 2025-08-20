@@ -2,10 +2,10 @@ from fastapi import FastAPI
 
 app = FastAPI()
 
-@app.get("/")
-def read_root():
-    return {"message": "Hello, FastAPI from Nx!"}
-
-@app.get("/ping")
+# All backend API routes are now under /api/*
+@app.get("/api/ping")
 def ping():
+    """
+    Simple health check endpoint for frontend-backend integration.
+    """
     return {"result": "pong"}

@@ -1,90 +1,102 @@
 # MonoRepoSkeleton
 
-<a alt="Nx logo" href="https://nx.dev" target="_blank" rel="noreferrer"><img src="https://raw.githubusercontent.com/nrwl/nx/master/images/nx-logo.png" width="45"></a>
+## Monorepo Workspace (Nx + TypeScript + Python)
 
-✨ Your new, shiny [Nx workspace](https://nx.dev) is almost ready ✨.
+This project is an Nx-managed monorepo supporting both TypeScript/Node.js and Python, suitable for modern full-stack, API, and library development.
 
-[Learn more about this workspace setup and its capabilities](https://nx.dev/nx-api/js?utm_source=nx_project&amp;utm_medium=readme&amp;utm_campaign=nx_projects) or run `npx nx graph` to visually explore what was created. Now, let's get you up to speed!
+---
 
-## Finish your CI setup
+## Folder Structure
 
-[Click here to finish setting up your workspace!](https://cloud.nx.app/connect/MR6PicSURP)
+```
+mono-repo-skeleton/
+├── apps/
+│   ├── backend/                # FastAPI Python backend (API server)
+│   │   ├── main.py
+│   │   ├── pyproject.toml
+│   │   └── package.json        # Nx target for backend
+│   └── frontend/               # Next.js frontend (TypeScript/React)
+│       ├── src/
+│       ├── package.json
+│       └── ...
+├── packages/                   # Shared packages/libs (for JS/TS)
+│   └── .gitkeep
+├── scripts/                    # Cross-language startup/install scripts
+│   ├── run-backend.bat
+│   └── install-backend.bat
+├── .gitignore
+├── nx.json
+├── package.json                # Nx workspace config
+├── tsconfig.base.json
+├── tsconfig.json
+├── setup.py (can be removed, now using pyproject.toml)
+└── README.md
+```
 
+---
 
-## Generate a library
+## Quick Start
 
+### 1. Install Node.js dependencies
 ```sh
-npx nx g @nx/js:lib packages/pkg1 --publishable --importPath=@my-org/pkg1
+npm install
 ```
 
-## Run tasks
-
-To build the library use:
-
+### 2. Install Python backend dependencies
 ```sh
-npx nx build pkg1
+npx nx build backend
 ```
-
-To run any task with Nx use:
-
+or manually:
 ```sh
-npx nx <target> <project-name>
+scripts\install-backend.bat
 ```
 
-These targets are either [inferred automatically](https://nx.dev/concepts/inferred-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) or defined in the `project.json` or `package.json` files.
-
-[More about running tasks in the docs &raquo;](https://nx.dev/features/run-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-
-## Versioning and releasing
-
-To version and release the library use
-
-```
-npx nx release
-```
-
-Pass `--dry-run` to see what would happen without actually releasing the library.
-
-[Learn more about Nx release &raquo;](https://nx.dev/features/manage-releases?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-
-## Keep TypeScript project references up to date
-
-Nx automatically updates TypeScript [project references](https://www.typescriptlang.org/docs/handbook/project-references.html) in `tsconfig.json` files to ensure they remain accurate based on your project dependencies (`import` or `require` statements). This sync is automatically done when running tasks such as `build` or `typecheck`, which require updated references to function correctly.
-
-To manually trigger the process to sync the project graph dependencies information to the TypeScript project references, run the following command:
-
+### 3. Start Python backend (FastAPI)
 ```sh
-npx nx sync
+npx nx serve backend
 ```
-
-You can enforce that the TypeScript project references are always in the correct state when running in CI by adding a step to your CI job configuration that runs the following command:
-
+or manually:
 ```sh
-npx nx sync:check
+scripts\run-backend.bat
+```
+API will be available at [http://localhost:8000](http://localhost:8000).
+
+### 4. Start frontend (Next.js)
+```sh
+npx nx serve frontend
+```
+or go to `apps/frontend` and run:
+```sh
+npm run dev
 ```
 
-[Learn more about nx sync](https://nx.dev/reference/nx-commands#sync)
+---
 
+## Nx Project Types
 
-[Learn more about Nx on CI](https://nx.dev/ci/intro/ci-with-nx#ready-get-started-with-your-provider?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+- **app**: Executable/deployable applications (e.g., frontend, backend).
+- **package/lib**: Reusable modules shared by multiple apps, located in `packages/` or `libs/`.
 
-## Install Nx Console
+---
 
-Nx Console is an editor extension that enriches your developer experience. It lets you run tasks, generate code, and improves code autocompletion in your IDE. It is available for VSCode and IntelliJ.
+## Dependency Management
 
-[Install Nx Console &raquo;](https://nx.dev/getting-started/editor-setup?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+- **Node.js/TypeScript**: Managed via `package.json` and `npm`.
+- **Python**: Managed via `pyproject.toml` (recommended: uv, PDM, Poetry), with virtual environment auto-created in `.venv/`.
 
-## Useful links
+---
 
-Learn more:
+## Other Notes
 
-- [Learn more about this workspace setup](https://nx.dev/nx-api/js?utm_source=nx_project&amp;utm_medium=readme&amp;utm_campaign=nx_projects)
-- [Learn about Nx on CI](https://nx.dev/ci/intro/ci-with-nx?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Releasing Packages with Nx release](https://nx.dev/features/manage-releases?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [What are Nx plugins?](https://nx.dev/concepts/nx-plugins?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+- `.gitignore` supports both Node.js/TS and Python.
+- All Nx targets can be run from the root with `npx nx <target> <project>`.
+- Use scripts in `scripts/` for cross-language install/startup automation.
 
-And join the Nx community:
-- [Discord](https://go.nx.dev/community)
-- [Follow us on X](https://twitter.com/nxdevtools) or [LinkedIn](https://www.linkedin.com/company/nrwl)
-- [Our Youtube channel](https://www.youtube.com/@nxdevtools)
-- [Our blog](https://nx.dev/blog?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+---
+
+## References
+
+- [Nx Documentation](https://nx.dev)
+- [FastAPI Documentation](https://fastapi.tiangolo.com/)
+- [Next.js Documentation](https://nextjs.org/)
+- [uv (Python ultra fast installer)](https://github.com/astral-sh/uv)
