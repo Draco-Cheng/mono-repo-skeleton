@@ -1,0 +1,13 @@
+.apiResult {
+  background: #f1f5f9;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 24px;
+  font-size: 18px;
+  color: #0f172a;
+  font-family: monospace;
+  min-height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}

@@ -1,6 +1,7 @@
 import "./globals.css";
+import Menu from "../components/templates/Menu";
 
-// Minimal layout for the frontend app
+// Minimal layout for the frontend app with a top menu
 export default function RootLayout({
   children,
 }: {
@@ -9,6 +10,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
+        <Menu />
         {children}
       </body>
     </html>
