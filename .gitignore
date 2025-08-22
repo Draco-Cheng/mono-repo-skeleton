@@ -4,6 +4,7 @@
 dist
 tmp
 out-tsc
+test-results
 
 # dependencies
 node_modules
@@ -60,3 +61,5 @@ requirements*.txt
 
 # Python egg-info
 *.egg-info/
+
+
