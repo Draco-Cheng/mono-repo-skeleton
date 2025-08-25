@@ -35,6 +35,36 @@ mono-repo-skeleton/
 
 ---
 
+## Docker Development (Compose)
+
+### Prerequisites
+
+- [Docker](https://docs.docker.com/get-docker/) and [Docker Compose](https://docs.docker.com/compose/) installed
+
+### Quick Start
+
+```sh
+docker-compose up --build
+```
+
+- Frontend: [http://localhost:3000](http://localhost:3000)
+- Backend API: [http://localhost:8000](http://localhost:8000)
+
+### Stopping and Cleanup
+
+```sh
+docker-compose down
+```
+
+### Notes
+
+- Source code is mounted as a volume for live reload in both frontend and backend.
+- Changes to dependencies (package.json/pyproject.toml) require rebuilding:
+  `docker-compose build`
+- For production, adjust Dockerfiles and compose as needed.
+
+---
+
 ## Quick Start
 
 ### 1. Install Node.js dependencies

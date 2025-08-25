@@ -1,0 +1,31 @@
+version: "3.9"
+
+services:
+  frontend:
+    build:
+      context: ./apps/frontend
+      dockerfile: Dockerfile
+    working_dir: /app
+    volumes:
+      - ./apps/frontend:/app
+      - ./tsconfig.base.json:/tsconfig.base.json:ro
+      - /app/node_modules
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - BACKEND_HOST=host.docker.internal
+    depends_on:
+      - backend
+
+  backend:
+    build:
+      context: ./apps/backend
+      dockerfile: Dockerfile
+    working_dir: /app
+    volumes:
+      - ./apps/backend:/app
+    ports:
+      - "8000:8000"
+    environment:
+      - PYTHONUNBUFFERED=1
