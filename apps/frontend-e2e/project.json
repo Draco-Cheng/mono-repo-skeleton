@@ -1,0 +1,16 @@
+{
+  "name": "frontend-e2e",
+  "projectType": "e2e",
+  "sourceRoot": "apps/frontend-e2e/tests",
+  "targets": {
+    "e2e": {
+      "executor": "@nx/playwright:playwright",
+      "options": {
+        "config": "apps/frontend-e2e/playwright.config.ts"
+      }
+    }
+  },
+  "implicitDependencies": [
+    "frontend"
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "projectType": "application",
+  "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "call scripts\\install-backend.bat"
+      }
+    },
+    "serve": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "call scripts\\run-backend.bat"
+      }
+    }
+  }
+}

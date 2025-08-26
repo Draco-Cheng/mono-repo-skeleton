@@ -21,6 +21,7 @@
   "workspaces": [
     "packages/*",
     "apps/frontend",
+    "apps/frontend-e2e",
     "apps/backend"
   ],
   "dependencies": {}
