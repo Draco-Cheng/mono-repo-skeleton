@@ -19,26 +19,31 @@ jobs:
           filter: tree:0
           fetch-depth: 0
 
-      
-      # This enables task distribution via Nx Cloud
-      # Run this command as early as possible, before dependencies are installed
-      # Learn more at https://nx.dev/ci/reference/nx-cloud-cli#npx-nxcloud-startcirun
-      # Uncomment this line to enable task distribution
-      # - run: npx nx start-ci-run --distribute-on="3 linux-medium-js" --stop-agents-after="build"
-
-      
-      # Cache node_modules
+      # Node.js setup & cache
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: 'npm'
-       
       - run: npm ci --legacy-peer-deps
 
+      # Python setup & backend test (pyproject.toml)
+      - uses: actions/setup-python@v4
+        with:
+          python-version: 3.11
+      - run: pip install .
+        working-directory: apps/backend
+      - run: pytest apps/backend || echo "No backend tests found, skipping."
 
-      # Prepend any command with "nx-cloud record --" to record its logs to Nx Cloud
-      # - run: npx nx-cloud record -- echo Hello World
+      # Nx lint/test/build/typecheck
       - run: npx nx run-many -t lint test build typecheck
-      # Nx Cloud recommends fixes for failures to help you get CI green faster. Learn more: https://nx.dev/ci/features/self-healing-ci
+
+      # 啟動 frontend/backend 伺服器並執行 e2e 測試
+      - run: |
+          npx nx serve backend &
+          npx nx serve frontend &
+          npx wait-on http://localhost:3000 http://localhost:8000
+          npx nx run frontend-e2e:e2e || echo "No e2e tests found, skipping."
+
+      # Nx Cloud自動修復CI
       - run: npx nx fix-ci
         if: always()

@@ -1,0 +1,26 @@
+name: CD
+
+on:
+  push:
+    branches:
+      - master
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Build frontend Docker image
+      - run: docker build -t ${{ secrets.DOCKER_USERNAME }}/frontend:latest -f apps/frontend/Dockerfile .
+
+      # Build backend Docker image
+      - run: docker build -t ${{ secrets.DOCKER_USERNAME }}/backend:latest -f apps/backend/Dockerfile .
+
+      # Login to Docker Hub
+      - run: echo ${{ secrets.DOCKER_PASSWORD }} | docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
+
+      # Push images to Docker Hub
+      - run: docker push ${{ secrets.DOCKER_USERNAME }}/frontend:latest
+      - run: docker push ${{ secrets.DOCKER_USERNAME }}/backend:latest
