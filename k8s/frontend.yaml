@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
         - name: frontend
-          image: <你的 Docker Hub 帳號>/frontend:latest
+          image: <your Docker Hub account>/frontend:latest
           ports:
             - containerPort: 3000
 ---
