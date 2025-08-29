@@ -18,6 +18,18 @@
             "options": {
                 "command": "cd apps/frontend && npm run test"
             }
+        },
+        "test:run": {
+            "executor": "nx:run-commands",
+            "options": {
+                "command": "cd apps/frontend && npm run test:run"
+            }
+        },
+        "test:coverage": {
+            "executor": "nx:run-commands",
+            "options": {
+                "command": "cd apps/frontend && npm run test:coverage"
+            }
         }
     }
 }

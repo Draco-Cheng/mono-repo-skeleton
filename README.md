@@ -2,40 +2,93 @@
 
 ## Monorepo Workspace (Nx + TypeScript + Python)
 
-This project is an Nx-managed monorepo supporting both TypeScript/Node.js and Python, suitable for modern full-stack, API, and library development.
+This project is an Nx-managed monorepo supporting both TypeScript/Node.js and Python, suitable for modern full-stack, API, and library development with comprehensive testing setup.
 
 ---
 
-## Folder Structure
+## 🏗️ Project Structure
 
 ```
 mono-repo-skeleton/
 ├── apps/
 │   ├── backend/                # FastAPI Python backend (API server)
-│   │   ├── main.py
-│   │   ├── pyproject.toml
-│   │   └── package.json        # Nx target for backend
+│   │   ├── main.py            # FastAPI application entry point
+│   │   ├── pyproject.toml     # Python dependencies & build config
+│   │   ├── project.json       # Nx targets for backend
+│   │   ├── pytest.ini         # pytest configuration
+│   │   └── tests/             # Python unit tests
+│   │       ├── __init__.py
+│   │       └── test_main.py   # API endpoint tests
 │   └── frontend/               # Next.js frontend (TypeScript/React)
 │       ├── src/
-│       ├── package.json
-│       └── ...
+│       │   ├── app/           # Next.js app router
+│       │   ├── components/    # React components (atomic design)
+│       │   └── hooks/         # Custom React hooks
+│       │       └── __tests__/ # React component tests
+│       ├── test/               # Test configuration
+│       │   ├── setup.ts       # Vitest setup with jest-dom
+│       │   └── postcss.config.cjs # Minimal PostCSS for tests
+│       ├── vitest.config.ts   # Vitest configuration
+│       ├── package.json       # Frontend dependencies & scripts
+│       └── tsconfig.json      # TypeScript configuration
 ├── packages/                   # Shared packages/libs (for JS/TS)
 │   └── .gitkeep
 ├── scripts/                    # Cross-language startup/install scripts
-│   ├── run-backend.bat
-│   └── install-backend.bat
+│   ├── run-backend.bat        # Start Python backend
+│   ├── install-backend.bat    # Install Python dependencies
+│   └── test-backend.bat       # Run Python tests
+├── k8s/                       # Kubernetes deployment configs
+│   ├── backend.yaml
+│   └── frontend.yaml
 ├── .gitignore
-├── nx.json
+├── nx.json                     # Nx workspace configuration
 ├── package.json                # Nx workspace config
-├── tsconfig.base.json
-├── tsconfig.json
-├── setup.py (can be removed, now using pyproject.toml)
+├── tsconfig.base.json          # Base TypeScript configuration
+├── tsconfig.json               # Root TypeScript configuration
 └── README.md
 ```
 
 ---
 
-## Docker Development (Compose)
+## 🧪 Testing Setup
+
+### Frontend Testing (Vitest + React Testing Library)
+```bash
+# Run frontend tests (interactive mode, enters watch mode)
+nx test frontend
+
+# Run tests once (non-interactive)
+nx run frontend:test:run
+
+# Run tests with coverage report
+nx run frontend:test:coverage
+```
+
+**Test Configuration:**
+- **Vitest** - Fast test runner with Jest-compatible API
+- **React Testing Library** - Component testing utilities
+- **jsdom** - DOM environment for tests
+- **jest-dom** - Additional DOM matchers for assertions
+- **@vitest/coverage-v8** - Code coverage reporting
+
+### Backend Testing (pytest)
+```bash
+# Run backend tests
+nx test backend
+
+# Run tests directly
+cd apps/backend
+python -m pytest
+```
+
+**Test Configuration:**
+- **pytest** - Python testing framework
+- **pytest-asyncio** - Async test support
+- **httpx** - HTTP client for testing FastAPI
+
+---
+
+## 🐳 Docker Development (Compose)
 
 ### Prerequisites
 
@@ -65,7 +118,7 @@ docker-compose down
 
 ---
 
-## Quick Start
+## 🚀 Quick Start
 
 ### 1. Install Node.js dependencies
 ```sh
@@ -102,31 +155,97 @@ npm run dev
 
 ---
 
-## Nx Project Types
+## 🧪 Running Tests
+
+### Frontend Tests
+```bash
+# Run tests in interactive mode (enters watch mode)
+nx test frontend
+
+# Run tests once (non-interactive, good for CI/CD)
+nx run frontend:test:run
+
+# Run tests with coverage report
+nx run frontend:test:coverage
+```
+
+**Test Modes:**
+- **Interactive Mode** (`nx test frontend`): Enters watch mode, automatically re-runs tests when files change
+- **Run Once** (`nx run frontend:test:run`): Executes tests once and exits, perfect for CI/CD pipelines
+- **Coverage Mode** (`nx run frontend:test:coverage`): Runs tests and generates detailed coverage report
+
+### Backend Tests
+```bash
+# Run all backend tests
+nx test backend
+
+# Run tests with verbose output
+cd apps/backend
+python -m pytest -v
+```
+
+---
+
+## 📦 Nx Project Types
 
 - **app**: Executable/deployable applications (e.g., frontend, backend).
 - **package/lib**: Reusable modules shared by multiple apps, located in `packages/` or `libs/`.
 
+## 🎯 Nx Targets
+
+### Frontend Targets
+- **`nx serve frontend`** - Start Next.js development server
+- **`nx build frontend`** - Build production bundle
+- **`nx test frontend`** - Run tests in interactive mode (watch mode)
+- **`nx run frontend:test:run`** - Run tests once (non-interactive)
+- **`nx run frontend:test:coverage`** - Run tests with coverage report
+
+### Backend Targets
+- **`nx serve backend`** - Start FastAPI development server
+- **`nx build backend`** - Install Python dependencies
+- **`nx test backend`** - Run pytest tests
+
 ---
 
-## Dependency Management
+## 🔧 Dependency Management
 
 - **Node.js/TypeScript**: Managed via `package.json` and `npm`.
-- **Python**: Managed via `pyproject.toml` (recommended: uv, PDM, Poetry), with virtual environment auto-created in `.venv/`.
+- **Python**: Managed via `pyproject.toml` with pytest and testing dependencies.
+- **Testing**: 
+  - Frontend: Vitest + React Testing Library
+  - Backend: pytest + httpx
 
 ---
 
-## Other Notes
+## 🎯 Key Features
+
+- **Monorepo Architecture**: Nx-managed workspace for scalable development
+- **Full-Stack Support**: TypeScript/React frontend + Python/FastAPI backend
+- **Comprehensive Testing**: 
+  - Frontend: Vitest + React Testing Library + Coverage reporting
+  - Backend: pytest + httpx
+  - Multiple test modes (interactive, run-once, coverage)
+- **Modern Tooling**: Next.js 15, React 19, FastAPI, pytest
+- **Docker Support**: Containerized development environment
+- **Kubernetes Ready**: Deployment configurations included
+
+---
+
+## 📚 Other Notes
 
 - `.gitignore` supports both Node.js/TS and Python.
 - All Nx targets can be run from the root with `npx nx <target> <project>`.
 - Use scripts in `scripts/` for cross-language install/startup automation.
+- Testing setup follows best practices for both ecosystems.
 
 ---
 
-## References
+## 🔗 References
 
 - [Nx Documentation](https://nx.dev)
 - [FastAPI Documentation](https://fastapi.tiangolo.com/)
 - [Next.js Documentation](https://nextjs.org/)
+- [Vitest Documentation](https://vitest.dev/)
+- [pytest Documentation](https://docs.pytest.org/)
+- [React Testing Library](https://testing-library.com/docs/react-testing-library/intro/)
 - [uv (Python ultra fast installer)](https://github.com/astral-sh/uv)
