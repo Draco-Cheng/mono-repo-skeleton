@@ -19,10 +19,10 @@
                 "command": "cd apps/frontend && npm run test"
             }
         },
-        "test:run": {
+        "test:watch": {
             "executor": "nx:run-commands",
             "options": {
-                "command": "cd apps/frontend && npm run test:run"
+                "command": "cd apps/frontend && npm run test:watch"
             }
         },
         "test:coverage": {
