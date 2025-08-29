@@ -12,6 +12,12 @@
       "options": {
         "command": "call scripts\\run-backend.bat"
       }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "call scripts\\test-backend.bat"
+      }
     }
   }
 }

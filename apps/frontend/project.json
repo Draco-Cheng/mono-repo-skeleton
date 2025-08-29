@@ -12,6 +12,12 @@
             "options": {
                 "command": "cd apps/frontend && npm run dev"
             }
+        },
+        "test": {
+            "executor": "nx:run-commands",
+            "options": {
+                "command": "cd apps/frontend && npm run test"
+            }
         }
     }
 }
