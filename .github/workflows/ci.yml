@@ -5,6 +5,12 @@ on:
     branches:
       - master
   pull_request:
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: 'Reason for manual trigger'
+        required: false
+        default: 'Manual CI run'
 
 permissions:
   actions: read
@@ -34,16 +40,25 @@ jobs:
         working-directory: apps/backend
       - run: pytest apps/backend || echo "No backend tests found, skipping."
 
-      # Nx lint/test/build/typecheck
-      - run: npx nx run-many -t lint test build typecheck
+      # Identify affected projects
+      - name: Identify affected projects
+        id: affected-projects
+        run: |
+          AFFECTED_PROJECTS=$(npx nx show projects --affected)
+          echo "Affected projects: $AFFECTED_PROJECTS"
+          echo "projects=$AFFECTED_PROJECTS" >> $GITHUB_OUTPUT
 
-      # 啟動 frontend/backend 伺服器並執行 e2e 測試
+      # Nx lint/test/build/typecheck for affected projects
+      - name: Lint, test, build, and typecheck affected projects
+        env:
+          AFFECTED_PROJECTS: ${{ steps.affected-projects.outputs.projects }}
+        run: |
+          echo "Running checks for affected projects: $AFFECTED_PROJECTS"
+          npx nx affected -t lint test build typecheck
+
+      # start frontend/backend service and do e2e test
       - run: |
           npx nx serve backend &
           npx nx serve frontend &
           npx wait-on http://localhost:3000 http://localhost:8000
           npx nx run frontend-e2e:e2e || echo "No e2e tests found, skipping."
-
-      # Nx Cloud自動修復CI
-      - run: npx nx fix-ci
-        if: always()

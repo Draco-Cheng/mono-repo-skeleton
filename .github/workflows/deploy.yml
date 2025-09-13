@@ -5,22 +5,63 @@ on:
     branches:
       - master
       - main
+    workflow_dispatch:
+    inputs:
+      reason:
+        description: 'Reason for manual trigger'
+        required: false
+        default: 'Manual CD run'
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch full history for Nx to determine affected projects
 
-      # Build frontend Docker image
-      - run: docker build -t ${{ secrets.DOCKER_USERNAME }}/frontend:latest -f apps/frontend/Dockerfile .
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
 
-      # Build backend Docker image
-      - run: docker build -t ${{ secrets.DOCKER_USERNAME }}/backend:latest -f apps/backend/Dockerfile .
+      - name: Install dependencies
+        run: npm ci
 
-      # Login to Docker Hub
-      - run: echo ${{ secrets.DOCKER_PASSWORD }} | docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
+      - name: Identify affected projects
+        id: affected-projects
+        run: |
+          AFFECTED_PROJECTS=$(npx nx show projects --affected)
+          echo "Affected projects: $AFFECTED_PROJECTS"
+          echo "projects=$AFFECTED_PROJECTS" >> $GITHUB_OUTPUT
 
-      # Push images to Docker Hub
-      - run: docker push ${{ secrets.DOCKER_USERNAME }}/frontend:latest
-      - run: docker push ${{ secrets.DOCKER_USERNAME }}/backend:latest
+      - name: Run lint and build for affected projects
+        run: npx nx affected -t lint build
+
+      - name: Build Docker images for affected projects
+        env:
+          AFFECTED_PROJECTS: ${{ steps.affected-projects.outputs.projects }}
+        run: |
+          REPO_NAME=$(echo "${{ github.repository }}" | cut -d'/' -f2)
+          BRANCH_NAME=$(echo "${{ github.ref_name }}" | sed 's/[^a-zA-Z0-9.-]/_/g')
+          for project in $AFFECTED_PROJECTS; do
+            docker build -t ${{ secrets.DOCKER_USERNAME }}/${REPO_NAME}/${project}:${BRANCH_NAME} -f apps/$project/Dockerfile .
+          done
+
+      - name: Login to Docker Hub
+        env:
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+        run: |
+          echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+
+      - name: Push affected Docker images
+        env:
+          AFFECTED_PROJECTS: ${{ steps.affected-projects.outputs.projects }}
+        run: |
+          REPO_NAME=$(echo "${{ github.repository }}" | cut -d'/' -f2)
+          BRANCH_NAME=$(echo "${{ github.ref_name }}" | sed 's/[^a-zA-Z0-9.-]/_/g')
+          echo "Pushing Docker images for affected projects: $AFFECTED_PROJECTS"
+          for project in $AFFECTED_PROJECTS; do
+            docker push ${{ secrets.DOCKER_USERNAME }}/${REPO_NAME}/${project}:${BRANCH_NAME}
+          done
