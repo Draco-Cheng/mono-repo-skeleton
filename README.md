@@ -33,10 +33,6 @@ mono-repo-skeleton/
 │       └── tsconfig.json      # TypeScript configuration
 ├── packages/                   # Shared packages/libs (for JS/TS)
 │   └── .gitkeep
-├── scripts/                    # Cross-language startup/install scripts
-│   ├── run-backend.bat        # Start Python backend
-│   ├── install-backend.bat    # Install Python dependencies
-│   └── test-backend.bat       # Run Python tests
 ├── k8s/                       # Kubernetes deployment configs
 │   ├── backend.yaml
 │   └── frontend.yaml
@@ -129,18 +125,10 @@ npm install
 ```sh
 npx nx build backend
 ```
-or manually:
-```sh
-scripts\install-backend.bat
-```
 
 ### 3. Start Python backend (FastAPI)
 ```sh
 npx nx serve backend
-```
-or manually:
-```sh
-scripts\run-backend.bat
 ```
 API will be available at [http://localhost:8000](http://localhost:8000).
 
@@ -235,7 +223,7 @@ python -m pytest -v
 
 - `.gitignore` supports both Node.js/TS and Python.
 - All Nx targets can be run from the root with `npx nx <target> <project>`.
-- Use scripts in `scripts/` for cross-language install/startup automation.
+- Use `npx nx` commands for cross-platform development.
 - Testing setup follows best practices for both ecosystems.
 
 ---
