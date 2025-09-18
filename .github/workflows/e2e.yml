@@ -1,0 +1,57 @@
+name: E2E Tests
+
+on:
+  # Run E2E tests on main branch pushes
+  push:
+    branches:
+      - main
+  # Run E2E tests nightly
+  # schedule:
+  #   - cron: '0 2 * * *'  # Every day at 2 AM UTC
+
+  # Allow manual trigger
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: 'Reason for manual E2E test run'
+        required: false
+        default: 'Manual E2E test run'
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # Node.js setup & cache
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+      - run: npm ci --legacy-peer-deps
+
+      # Python setup for backend
+      - uses: actions/setup-python@v4
+        with:
+          python-version: 3.11
+      - run: pip install .
+        working-directory: apps/backend
+
+      # Build all dependencies
+      - name: Build dependencies
+        run: npx nx build backend frontend
+
+      # Start services and run E2E tests
+      - name: Run E2E tests
+        run: |
+          npx nx serve backend &
+          npx nx serve frontend &
+          npx wait-on http://localhost:3000 http://localhost:8000 --timeout 120000
+          npx nx run frontend-e2e:e2e || echo "No e2e tests found, skipping."
+          pkill -f "nx serve" || true

@@ -67,10 +67,6 @@ From the monorepo root:
 ```sh
 npx nx serve backend
 ```
-or
-```sh
-scripts\run-backend.bat
-```
 
 ### 3. Start the frontend
 

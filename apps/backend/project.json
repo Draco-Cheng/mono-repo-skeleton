@@ -4,20 +4,36 @@
     "build": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "call scripts\\install-backend.bat"
+        "command": "pip install .",
+        "cwd": "apps/backend"
       }
     },
     "serve": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "call scripts\\run-backend.bat"
+        "commands": [
+          {
+            "command": "python -m uvicorn main:app --reload --host 0.0.0.0 --port 8000",
+            "forwardAllArgs": false
+          }
+        ],
+        "cwd": "apps/backend"
       }
     },
     "test": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "call scripts\\test-backend.bat"
+        "command": "python -m pip install .[test] && python -m pytest -v",
+        "cwd": "apps/backend"
       }
+    },
+    "publish": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "docker build -t \"$DOCKER_USERNAME/${REPO_NAME}_backend:$BRANCH_NAME\" . && docker push \"$DOCKER_USERNAME/${REPO_NAME}_backend:$BRANCH_NAME\"",
+        "cwd": "apps/backend"
+      },
+      "dependsOn": ["build"]
     }
   }
 }

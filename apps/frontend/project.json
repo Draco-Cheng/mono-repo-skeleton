@@ -4,32 +4,47 @@
         "build": {
             "executor": "nx:run-commands",
             "options": {
-                "command": "cd apps/frontend && npm run build"
+                "command": "npm run build",
+                "cwd": "apps/frontend"
             }
         },
         "serve": {
             "executor": "nx:run-commands",
             "options": {
-                "command": "cd apps/frontend && npm run dev"
+                "command": "npm run dev",
+                "cwd": "apps/frontend"
             }
         },
         "test": {
             "executor": "nx:run-commands",
             "options": {
-                "command": "cd apps/frontend && npm run test"
+                "command": "npm run test",
+                "cwd": "apps/frontend"
             }
         },
         "test:watch": {
             "executor": "nx:run-commands",
             "options": {
-                "command": "cd apps/frontend && npm run test:watch"
+                "command": "npm run test:watch",
+                "cwd": "apps/frontend"
             }
         },
         "test:coverage": {
             "executor": "nx:run-commands",
             "options": {
-                "command": "cd apps/frontend && npm run test:coverage"
+                "command": "npm run test:coverage",
+                "cwd": "apps/frontend"
             }
+        },
+        "publish": {
+            "executor": "nx:run-commands",
+            "options": {
+                "command": "docker build --target production -t \"$DOCKER_USERNAME/${REPO_NAME}_frontend:$BRANCH_NAME\" . && docker push \"$DOCKER_USERNAME/${REPO_NAME}_frontend:$BRANCH_NAME\"",
+                "cwd": "apps/frontend"
+            },
+            "dependsOn": [
+                "build"
+            ]
         }
     }
 }

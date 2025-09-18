@@ -44,20 +44,12 @@ From the monorepo root:
 ```sh
 npx nx build backend
 ```
-or manually:
-```sh
-scripts\install-backend.bat
-```
 
 ### 2. Start the backend
 
 From the monorepo root:
 ```sh
 npx nx serve backend
-```
-or manually:
-```sh
-scripts\run-backend.bat
 ```
 
 The API will be available at [http://localhost:8000](http://localhost:8000).
@@ -170,11 +162,12 @@ docker-compose up backend
 - **`nx serve backend`** - Start development server
 - **`nx test backend`** - Run pytest tests
 
-### Scripts
+### Cross-Platform Commands
 
-- **`scripts/install-backend.bat`** - Install dependencies
-- **`scripts/run-backend.bat`** - Start development server
-- **`scripts/test-backend.bat`** - Run tests
+All commands are now cross-platform compatible through Nx:
+- **`nx build backend`** - Install dependencies
+- **`nx serve backend`** - Start development server
+- **`nx test backend`** - Run tests
 
 ---
 

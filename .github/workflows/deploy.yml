@@ -5,7 +5,7 @@ on:
     branches:
       - master
       - main
-    workflow_dispatch:
+  workflow_dispatch:
     inputs:
       reason:
         description: 'Reason for manual trigger'
@@ -15,53 +15,52 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    env:
+      DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+      DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+      REPO_NAME: ${{ github.event.repository.name }}
+      BRANCH_NAME: ${{ github.ref_name }}
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Fetch full history for Nx to determine affected projects
+          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
+          cache: 'npm'
 
       - name: Install dependencies
         run: npm ci
 
+      # Python and UV setup for backend projects
+      - uses: actions/setup-python@v4
+        with:
+          python-version: 3.11
+      - uses: astral-sh/setup-uv@v3
+
+      # Set up base and head refs for nx affected
+      - name: Set base and head SHAs
+        uses: nrwl/nx-set-shas@v4
+        with:
+          main-branch-name: 'main'
+
       - name: Identify affected projects
-        id: affected-projects
         run: |
-          AFFECTED_PROJECTS=$(npx nx show projects --affected)
-          echo "Affected projects: $AFFECTED_PROJECTS"
-          echo "projects=$AFFECTED_PROJECTS" >> $GITHUB_OUTPUT
+          echo "Event Name: ${{ github.event_name }}"
+          echo "NX_BASE: ${{ env.NX_BASE }}"
+          echo "NX_HEAD: ${{ env.NX_HEAD }}"
+          echo "Affected projects:"
+          npx nx show projects --affected --base=${{ env.NX_BASE }} --head=${{ env.NX_HEAD }}
 
-      - name: Run lint and build for affected projects
-        run: npx nx affected -t lint build
-
-      - name: Build Docker images for affected projects
-        env:
-          AFFECTED_PROJECTS: ${{ steps.affected-projects.outputs.projects }}
-        run: |
-          REPO_NAME=$(echo "${{ github.repository }}" | cut -d'/' -f2)
-          BRANCH_NAME=$(echo "${{ github.ref_name }}" | sed 's/[^a-zA-Z0-9.-]/_/g')
-          for project in $AFFECTED_PROJECTS; do
-            docker build -t ${{ secrets.DOCKER_USERNAME }}/${REPO_NAME}/${project}:${BRANCH_NAME} -f apps/$project/Dockerfile .
-          done
+      - name: Build and lint affected projects
+        run: npx nx affected -t lint build --base=${{ env.NX_BASE }} --head=${{ env.NX_HEAD }}
 
       - name: Login to Docker Hub
-        env:
-          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
-          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
         run: |
           echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
 
-      - name: Push affected Docker images
-        env:
-          AFFECTED_PROJECTS: ${{ steps.affected-projects.outputs.projects }}
+      - name: Publish affected projects
         run: |
-          REPO_NAME=$(echo "${{ github.repository }}" | cut -d'/' -f2)
-          BRANCH_NAME=$(echo "${{ github.ref_name }}" | sed 's/[^a-zA-Z0-9.-]/_/g')
-          echo "Pushing Docker images for affected projects: $AFFECTED_PROJECTS"
-          for project in $AFFECTED_PROJECTS; do
-            docker push ${{ secrets.DOCKER_USERNAME }}/${REPO_NAME}/${project}:${BRANCH_NAME}
-          done
+          npx nx affected -t publish --base=${{ env.NX_BASE }} --head=${{ env.NX_HEAD }}
