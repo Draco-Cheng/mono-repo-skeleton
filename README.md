@@ -51,10 +51,10 @@ mono-repo-skeleton/
 ### Frontend Testing (Vitest + React Testing Library)
 ```bash
 # Run frontend tests (interactive mode, enters watch mode)
-nx test frontend
+nx run frontend:test:watch
 
 # Run tests once (non-interactive)
-nx run frontend:test:run
+nx test frontend
 
 # Run tests with coverage report
 nx run frontend:test:coverage
@@ -148,18 +148,18 @@ npm run dev
 ### Frontend Tests
 ```bash
 # Run tests in interactive mode (enters watch mode)
-nx test frontend
+nx run frontend:test:watch
 
 # Run tests once (non-interactive, good for CI/CD)
-nx run frontend:test:run
+nx test frontend
 
 # Run tests with coverage report
 nx run frontend:test:coverage
 ```
 
 **Test Modes:**
-- **Interactive Mode** (`nx test frontend`): Enters watch mode, automatically re-runs tests when files change
-- **Run Once** (`nx run frontend:test:run`): Executes tests once and exits, perfect for CI/CD pipelines
+- **Interactive Mode** (`nx run frontend:test:watch`): Enters watch mode, automatically re-runs tests when files change
+- **Run Once** (`nx test frontend`): Executes tests once and exits, perfect for CI/CD pipelines
 - **Coverage Mode** (`nx run frontend:test:coverage`): Runs tests and generates detailed coverage report
 
 ### Backend Tests
@@ -184,8 +184,8 @@ python -m pytest -v
 ### Frontend Targets
 - **`nx serve frontend`** - Start Next.js development server
 - **`nx build frontend`** - Build production bundle
-- **`nx test frontend`** - Run tests in interactive mode (watch mode)
-- **`nx run frontend:test:run`** - Run tests once (non-interactive)
+- **`nx test frontend`** - Run tests once (non-interactive)
+- **`nx run frontend:test:watch`** - Run tests in watch mode
 - **`nx run frontend:test:coverage`** - Run tests with coverage report
 
 ### Backend Targets
