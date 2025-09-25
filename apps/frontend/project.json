@@ -45,6 +45,13 @@
             "dependsOn": [
                 "build"
             ]
+        },
+        "retag": {
+            "executor": "nx:run-commands",
+            "options": {
+                "command": "docker buildx imagetools create --tag \"$DOCKER_USERNAME/${REPO_NAME}_frontend:$VERSION\" --tag \"$DOCKER_USERNAME/${REPO_NAME}_frontend:latest\" \"$DOCKER_USERNAME/${REPO_NAME}_frontend:$LAST_VERSION\"",
+                "cwd": "apps/frontend"
+            }
         }
     }
 }

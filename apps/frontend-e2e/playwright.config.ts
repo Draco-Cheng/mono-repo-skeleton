@@ -8,6 +8,23 @@ export default defineConfig({
     baseURL: 'http://localhost:3000',
     trace: 'on-first-retry',
   },
+  // Automatically start services before running tests
+  webServer: [
+    {
+      command: 'npx nx build backend && npx nx serve backend',
+      port: 8000,
+      cwd: '../../',
+      reuseExistingServer: !process.env.CI,
+      timeout: 120000,
+    },
+    {
+      command: 'npx nx serve frontend',
+      port: 3000,
+      cwd: '../../',
+      reuseExistingServer: !process.env.CI,
+      timeout: 120000,
+    },
+  ],
   projects: [
     {
       name: 'chromium',
