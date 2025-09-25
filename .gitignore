@@ -18,6 +18,7 @@ node_modules
 *.launch
 .settings/
 *.sublime-workspace
+.claude
 
 # IDE - VSCode
 .vscode/*
@@ -63,4 +64,10 @@ requirements*.txt
 # Python egg-info
 *.egg-info/
 
+# Python Test
+**/reports/
+**/coverage/
+**/.coverage
 
+
+test-output

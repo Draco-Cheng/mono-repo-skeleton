@@ -5,6 +5,7 @@ services:
     build:
       context: ./apps/frontend
       dockerfile: Dockerfile
+      target: development
     working_dir: /app
     volumes:
       - ./apps/frontend:/app

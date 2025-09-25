@@ -30,10 +30,17 @@
     "publish": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "docker build -t \"$DOCKER_USERNAME/${REPO_NAME}_backend:$BRANCH_NAME\" . && docker push \"$DOCKER_USERNAME/${REPO_NAME}_backend:$BRANCH_NAME\"",
+        "command": "docker build -t \"$DOCKER_USERNAME/${REPO_NAME}_backend:$VERSION\" -t \"$DOCKER_USERNAME/${REPO_NAME}_backend:latest\" . && docker push \"$DOCKER_USERNAME/${REPO_NAME}_backend:$VERSION\" && docker push \"$DOCKER_USERNAME/${REPO_NAME}_backend:latest\"",
         "cwd": "apps/backend"
       },
       "dependsOn": ["build"]
+    },
+    "retag": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "docker buildx imagetools create --tag \"$DOCKER_USERNAME/${REPO_NAME}_backend:$VERSION\" --tag \"$DOCKER_USERNAME/${REPO_NAME}_backend:latest\" \"$DOCKER_USERNAME/${REPO_NAME}_backend:$LAST_VERSION\"",
+        "cwd": "apps/backend"
+      }
     }
   }
 }

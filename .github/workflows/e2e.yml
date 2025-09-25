@@ -1,11 +1,7 @@
-name: E2E Tests
+name: Nightly E2E Tests
 
 on:
-  # Run E2E tests on main branch pushes
-  push:
-    branches:
-      - main
-  # Run E2E tests nightly
+  # Run E2E tests nightly (full suite)
   # schedule:
   #   - cron: '0 2 * * *'  # Every day at 2 AM UTC
 
@@ -40,18 +36,24 @@ jobs:
       - uses: actions/setup-python@v4
         with:
           python-version: 3.11
-      - run: pip install .
-        working-directory: apps/backend
 
-      # Build all dependencies
-      - name: Build dependencies
-        run: npx nx build backend frontend
+      # Install main browsers (Chromium, Firefox, Webkit)
+      - name: Install Playwright dependencies
+        run: npx playwright install chromium firefox webkit --with-deps
 
-      # Start services and run E2E tests
-      - name: Run E2E tests
+      # Build dependencies and run all E2E tests
+      - name: Build and run all E2E tests
         run: |
-          npx nx serve backend &
-          npx nx serve frontend &
-          npx wait-on http://localhost:3000 http://localhost:8000 --timeout 120000
-          npx nx run frontend-e2e:e2e || echo "No e2e tests found, skipping."
-          pkill -f "nx serve" || true
+          # Build all services first
+          npx nx build backend frontend
+
+          # Run all E2E tests (services will be auto-started by Playwright)
+          npx nx run-many -t e2e
+
+      # Trigger deployment if E2E tests pass
+      - name: Trigger deployment
+        if: success()
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          event-type: e2e-passed
