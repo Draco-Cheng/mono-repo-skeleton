@@ -1,0 +1,34 @@
+name: PR Validation
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize]
+
+jobs:
+  validate-pr-title:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate PR Title
+        uses: amannn/action-semantic-pull-request@v5
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          types: |
+            feat
+            fix
+            docs
+            style
+            refactor
+            perf
+            test
+            chore
+            ci
+            build
+            revert
+          requireScope: false
+          subjectPattern: ^[A-Z].+$ # 首字母大寫
+          subjectPatternError: |
+            Subject must start with uppercase letter
+          validateSingleCommit: false
+          ignoreLabels: |
+            ignore-semantic-pull-request

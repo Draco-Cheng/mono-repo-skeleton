@@ -42,6 +42,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+
       # Python and UV setup for backend projects
       - uses: actions/setup-python@v4
         with:
@@ -54,9 +55,29 @@ jobs:
         with:
           main-branch-name: 'main'
 
-      - name: Generate unified version
+      - name: Run nx release to generate version and tag
         run: |
-          VERSION="v$(date +%Y.%m.%d)-${{ github.run_number }}"
+          # Configure git for nx release
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+
+          # Create initial semantic version tag if none exists
+          SEMANTIC_TAGS=$(git tag -l | grep -E "^v[0-9]+\.[0-9]+\.[0-9]+$" | head -1)
+          if [ -z "$SEMANTIC_TAGS" ]; then
+            echo "No semantic version tags found, creating initial v0.1.0 tag"
+            git tag v0.1.0
+            git push origin v0.1.0
+            VERSION="v0.1.0"
+          else
+            echo "Existing semantic version tags found: $SEMANTIC_TAGS"
+            echo "Using nx release for next version"
+            npx nx release version
+            # Get the newly created version tag
+            git fetch --tags
+            VERSION=$(git tag -l | grep -E "^v[0-9]+\.[0-9]+\.[0-9]+$" | sort -V | tail -1)
+            echo "Latest version after nx release: $VERSION"
+          fi
+
           echo "VERSION=$VERSION" >> $GITHUB_ENV
           echo "Generated version: $VERSION"
 
@@ -104,14 +125,7 @@ jobs:
             echo "No projects to retag"
           fi
 
-      # Create git tag to sync with Docker image versions
-      - name: Create and push version tag
+      # Git tag already created by nx release, just confirm
+      - name: Confirm version tag created
         run: |
-          git config user.name "GitHub Actions"
-          git config user.email "actions@github.com"
-
-          echo "Creating git tag: ${{ env.VERSION }}"
-          git tag -a "${{ env.VERSION }}" -m "Release ${{ env.VERSION }} - Automated deployment"
-          git push origin "${{ env.VERSION }}"
-
-          echo "✅ Git tag ${{ env.VERSION }} created and pushed"
+          echo "✅ Git tag ${{ env.VERSION }} created and committed by nx release"

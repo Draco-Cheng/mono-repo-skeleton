@@ -12,7 +12,8 @@ requires-python = ">=3.10"
 find = {}
 
 [project.optional-dependencies]
-test = [
+dev = [
+    "ruff>=0.8.2",
     "pytest>=8.0.0",
     "pytest-asyncio>=1.0.0",
     "httpx>=0.25.0"

@@ -1,12 +1,20 @@
 {
   "projectType": "application",
   "targets": {
+    "deps": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "pip install .[dev]",
+        "cwd": "apps/backend"
+      }
+    },
     "build": {
       "executor": "nx:run-commands",
       "options": {
         "command": "pip install .",
         "cwd": "apps/backend"
-      }
+      },
+      "dependsOn": ["deps"]
     },
     "serve": {
       "executor": "nx:run-commands",
@@ -20,12 +28,21 @@
         "cwd": "apps/backend"
       }
     },
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "ruff check .",
+        "cwd": "apps/backend"
+      },
+      "dependsOn": ["deps"]
+    },
     "test": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "python -m pip install .[test] && python -m pytest -v",
+        "command": "python -m pytest -v",
         "cwd": "apps/backend"
-      }
+      },
+      "dependsOn": ["deps"]
     },
     "publish": {
       "executor": "nx:run-commands",
