@@ -24,8 +24,18 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     env:
+      # === Docker settings ===
       DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
       DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+
+      # === Kubernetes ===
+      K8S_NAMESPACE: mono-repo-skeleton
+      K8S_CA_DATA: ${{ secrets.K8S_CA_DATA }}
+      K8S_CLIENT_CERT: ${{ secrets.K8S_CLIENT_CERT }}
+      K8S_CLIENT_KEY: ${{ secrets.K8S_CLIENT_KEY }}
+      K8S_SERVER: ${{ secrets.K8S_SERVER }}
+
+      # === GitHub context ===
       REPO_NAME: ${{ github.event.repository.name }}
       BRANCH_NAME: ${{ github.ref_name }}
     steps:
@@ -119,13 +129,88 @@ jobs:
           if [ ! -z "$NON_AFFECTED_PROJECTS" ]; then
             for project in $NON_AFFECTED_PROJECTS; do
               echo "Retagging $project..."
-              npx nx run $project:retag
+              # Check if latest image exists before retagging (skip new projects without images)
+              LATEST_IMAGE="$DOCKER_USERNAME/${REPO_NAME}_${project}:latest"
+              if docker manifest inspect "$LATEST_IMAGE" > /dev/null 2>&1; then
+                npx nx run $project:retag
+              else
+                echo "⚠️  Skipping retag for $project: no existing image found (new project?)"
+              fi
             done
           else
             echo "No projects to retag"
           fi
 
-      # Git tag already created by nx release, just confirm
-      - name: Confirm version tag created
+      # Add annotation to the git tag with release notes
+      - name: Add release notes to git tag
         run: |
-          echo "✅ Git tag ${{ env.VERSION }} created and committed by nx release"
+          # Get affected projects
+          AFFECTED_PROJECTS=$(npx nx show projects --affected --base=${{ env.NX_BASE }} --head=${{ env.NX_HEAD }} | sed 's/^/  - /')
+
+          # Get commit messages since last version
+          LAST_VERSION=$(git describe --tags --abbrev=0 ${{ env.VERSION }}^ 2>/dev/null || echo "")
+          if [ -n "$LAST_VERSION" ]; then
+            CHANGES=$(git log --pretty=format:"  - %s" $LAST_VERSION..${{ env.VERSION }} | head -10)
+          else
+            CHANGES=$(git log --pretty=format:"  - %s" -5)
+          fi
+
+          # Create annotated tag message
+          TAG_MESSAGE="Release ${{ env.VERSION }}
+
+          📦 Affected Projects:
+          ${AFFECTED_PROJECTS:-  - all}
+
+          📝 Changes:
+          $CHANGES
+
+          🚀 Deployed by GitHub Actions"
+
+          # Delete the lightweight tag and create annotated tag
+          git tag -d ${{ env.VERSION }}
+          git tag -a ${{ env.VERSION }} -m "$TAG_MESSAGE"
+          git push origin ${{ env.VERSION }} --force
+
+          echo "✅ Git tag ${{ env.VERSION }} updated with release notes"
+
+      # Setup kubectl for deployment
+      - name: Setup kubectl
+        run: |
+          curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+          chmod +x kubectl
+          sudo mv kubectl /usr/local/bin/
+
+      - name: Configure kubectl for Kubernetes cluster
+        run: |
+          mkdir -p ~/.kube
+
+          # Debug: Check if secrets are properly set
+          echo "Checking secret lengths..."
+          echo "CA_DATA length: ${#K8S_CA_DATA}"
+          echo "CLIENT_CERT length: ${#K8S_CLIENT_CERT}"
+          echo "CLIENT_KEY length: ${#K8S_CLIENT_KEY}"
+
+          # Validate all K8s credentials are valid base64
+          echo "Validating K8s credentials..."
+          INVALID=""
+          echo "$K8S_CA_DATA" | base64 -d > /dev/null 2>&1 || INVALID="${INVALID}K8S_CA_DATA "
+          echo "$K8S_CLIENT_CERT" | base64 -d > /dev/null 2>&1 || INVALID="${INVALID}K8S_CLIENT_CERT "
+          echo "$K8S_CLIENT_KEY" | base64 -d > /dev/null 2>&1 || INVALID="${INVALID}K8S_CLIENT_KEY "
+          if [ -n "$INVALID" ]; then
+            echo "ERROR: Invalid base64 format: $INVALID"
+            exit 1
+          fi
+          echo "All K8s credentials are valid"
+
+          # Create kubeconfig from template
+          envsubst < .github/templates/kubeconfig.yaml > ~/.kube/config
+
+          kubectl config current-context
+
+          # Create namespace
+          envsubst < .github/templates/namespace.yaml | kubectl apply -f -
+
+      # Deploy affected projects to Kubernetes
+      - name: Deploy affected projects to Kubernetes
+        run: |
+          npx nx affected -t deploy --base=${{ env.NX_BASE }} --head=${{ env.NX_HEAD }}

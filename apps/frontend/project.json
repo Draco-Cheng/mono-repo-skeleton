@@ -49,9 +49,17 @@
         "retag": {
             "executor": "nx:run-commands",
             "options": {
-                "command": "docker buildx imagetools create --tag \"$DOCKER_USERNAME/${REPO_NAME}_frontend:$VERSION\" --tag \"$DOCKER_USERNAME/${REPO_NAME}_frontend:latest\" \"$DOCKER_USERNAME/${REPO_NAME}_frontend:$LAST_VERSION\"",
+                "command": "docker buildx imagetools create --tag \"$DOCKER_USERNAME/${REPO_NAME}_frontend:$VERSION\" \"$DOCKER_USERNAME/${REPO_NAME}_frontend:latest\"",
                 "cwd": "apps/frontend"
             }
+        },
+        "deploy": {
+            "executor": "nx:run-commands",
+            "options": {
+                "command": "envsubst < k8s/deployment.yaml | kubectl apply -f -",
+                "cwd": "apps/frontend"
+            },
+            "dependsOn": ["publish"]
         }
     }
 }

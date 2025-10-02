@@ -65,6 +65,9 @@
     "version": {
       "conventionalCommits": true,
       "fallbackCurrentVersionResolver": "disk",
+      "versionActionsOptions": {
+        "skipLockFileUpdate": true
+      },
       "git": {
         "commitMessage": "chore: release version {version}",
         "tagName": "v{version}",
