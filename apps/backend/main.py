@@ -1,8 +1,7 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, APIRouter
 
 app = FastAPI()
 
-# Health check endpoint for wait-on and monitoring
 @app.get("/")
 @app.head("/")
 def health_check():
@@ -12,10 +11,13 @@ def health_check():
     """
     return {"status": "ok", "service": "backend"}
 
-# All backend API routes are now under /api/*
-@app.get("/api/ping")
+api_router = APIRouter(prefix="")
+@api_router.get("/ping")
 def ping():
     """
     Simple health check endpoint for frontend-backend integration.
     """
     return {"result": "pong"}
+
+# Include the API router
+app.include_router(api_router)

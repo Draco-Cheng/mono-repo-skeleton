@@ -32,13 +32,13 @@ spec:
             cpu: "200m"
         livenessProbe:
           httpGet:
-            path: /api/ping
+            path: /
             port: 8000
           initialDelaySeconds: 30
           periodSeconds: 10
         readinessProbe:
           httpGet:
-            path: /api/ping
+            path: /
             port: 8000
           initialDelaySeconds: 5
           periodSeconds: 5
@@ -53,25 +53,6 @@ spec:
     app: backend
   ports:
     - protocol: TCP
-      port: 80
+      port: 8000
       targetPort: 8000
   type: ClusterIP
----
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: backend-ingress
-  namespace: ${K8S_NAMESPACE}
-  annotations:
-    kubernetes.io/ingress.class: traefik
-spec:
-  rules:
-  - http:
-      paths:
-      - path: /api
-        pathType: Prefix
-        backend:
-          service:
-            name: backend-service
-            port:
-              number: 80

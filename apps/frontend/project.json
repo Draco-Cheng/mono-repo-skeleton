@@ -41,10 +41,7 @@
             "options": {
                 "command": "docker build --target production -t \"$DOCKER_USERNAME/${REPO_NAME}_frontend:$VERSION\" -t \"$DOCKER_USERNAME/${REPO_NAME}_frontend:latest\" . && docker push \"$DOCKER_USERNAME/${REPO_NAME}_frontend:$VERSION\" && docker push \"$DOCKER_USERNAME/${REPO_NAME}_frontend:latest\"",
                 "cwd": "apps/frontend"
-            },
-            "dependsOn": [
-                "build"
-            ]
+            }
         },
         "retag": {
             "executor": "nx:run-commands",

@@ -20,6 +20,9 @@ spec:
         image: ${DOCKER_USERNAME}/${REPO_NAME}_frontend:${VERSION}
         ports:
         - containerPort: 3000
+        env:
+        - name: BACKEND_URL
+          value: "http://backend-service:8000"
         resources:
           requests:
             memory: "64Mi"
@@ -52,23 +55,5 @@ spec:
     - protocol: TCP
       port: 80
       targetPort: 3000
-  type: ClusterIP
----
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: frontend-ingress
-  namespace: ${K8S_NAMESPACE}
-  annotations:
-    kubernetes.io/ingress.class: traefik
-spec:
-  rules:
-  - http:
-      paths:
-      - path: /
-        pathType: Prefix
-        backend:
-          service:
-            name: frontend-service
-            port:
-              number: 80
+      nodePort: 30300
+  type: NodePort

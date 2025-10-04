@@ -1,4 +1,5 @@
 import React from "react";
+import Link from "next/link";
 import Card from "../organisms/Card";
 import Footer from "../atoms/Footer";
 import Button from "../atoms/Button";
@@ -13,9 +14,9 @@ const WelcomeDashboard: React.FC = () => (
       <p className={styles.subtitle}>
         This is the main dashboard. Use the navigation or button below to try the backend API demo.
       </p>
-      <a href="/ping" style={{ textDecoration: "none" }}>
+      <Link href="/ping" style={{ textDecoration: "none" }}>
         <Button>Go to /ping API Demo</Button>
-      </a>
+      </Link>
     </Card>
     <Footer />
   </div>
