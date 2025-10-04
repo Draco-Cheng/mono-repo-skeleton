@@ -1,5 +1,5 @@
 import { useCallback, useState, useEffect } from "react";
-import { API_PREFIX } from "../app/config";
+import { API_PREFIX } from "../config";
 
 // Define the expected response type for /api/ping
 interface PingResponse {

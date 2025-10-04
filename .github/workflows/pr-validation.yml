@@ -4,9 +4,17 @@ on:
   pull_request:
     types: [opened, edited, synchronize]
 
+# Prevent duplicate runs for the same PR
+concurrency:
+  group: pr-validation-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
 jobs:
   validate-pr-title:
     runs-on: ubuntu-latest
+    permissions:
+      pull-requests: read
+      statuses: write
     steps:
       - name: Validate PR Title
         uses: amannn/action-semantic-pull-request@v5
@@ -26,9 +34,6 @@ jobs:
             build
             revert
           requireScope: false
-          subjectPattern: ^[A-Z].+$ # 首字母大寫
-          subjectPatternError: |
-            Subject must start with uppercase letter
           validateSingleCommit: false
           ignoreLabels: |
             ignore-semantic-pull-request

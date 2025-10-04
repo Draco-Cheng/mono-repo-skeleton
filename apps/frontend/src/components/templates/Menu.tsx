@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Link from "next/link";
 import { usePathname } from "next/navigation";
 import styles from "./Menu.module.css";
 
@@ -15,7 +16,7 @@ const Menu: React.FC = () => {
   return (
     <nav className={styles.menu}>
       {links.map((link) => (
-        <a
+        <Link
           key={link.href}
           href={link.href}
           className={
@@ -26,7 +27,7 @@ const Menu: React.FC = () => {
           aria-current={pathname === link.href ? "page" : undefined}
         >
           {link.label}
-        </a>
+        </Link>
       ))}
     </nav>
   );
