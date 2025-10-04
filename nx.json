@@ -62,6 +62,21 @@
   },
   "release": {
     "projects": ["*"],
+    "conventionalCommits": {
+      "types": {
+        "feat": { "semverBump": "minor" },
+        "fix": { "semverBump": "patch" },
+        "refactor": { "semverBump": "patch" },
+        "chore": { "semverBump": "patch" },
+        "docs": { "semverBump": "patch" },
+        "style": { "semverBump": "patch" },
+        "test": { "semverBump": "patch" },
+        "ci": { "semverBump": "patch" },
+        "perf": { "semverBump": "patch" },
+        "build": { "semverBump": "patch" },
+        "revert": { "semverBump": "patch" }
+      }
+    },
     "version": {
       "conventionalCommits": true,
       "fallbackCurrentVersionResolver": "disk",
