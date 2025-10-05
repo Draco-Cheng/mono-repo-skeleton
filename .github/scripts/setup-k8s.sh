@@ -26,9 +26,4 @@ echo "Verifying cluster connection..."
 kubectl config current-context
 echo "✓ Connected to cluster"
 
-# Create namespace
-echo "Creating namespace..."
-envsubst < .github/templates/namespace.yaml | kubectl apply -f -
-echo "✓ Namespace ready"
-
 echo "=== Kubernetes environment setup complete ==="
