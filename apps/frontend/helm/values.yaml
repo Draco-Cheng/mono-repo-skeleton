@@ -1,0 +1,16 @@
+service:
+  type: NodePort
+  port: 80
+  targetPort: 3000
+  nodePort: 30301
+
+resources:
+  requests:
+    memory: "64Mi"
+    cpu: "50m"
+  limits:
+    memory: "128Mi"
+    cpu: "100m"
+
+env:
+  BACKEND_URL: "http://backend-service:8000"

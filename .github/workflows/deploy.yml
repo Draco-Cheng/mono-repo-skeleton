@@ -94,8 +94,17 @@ jobs:
             VERSION="v0.1.0"
           else
             echo "Existing semantic version tags found: $SEMANTIC_TAGS"
-            echo "Using nx release for next version"
-            npx nx release version
+
+            # Check if latest commit is feat (for minor bump) or default to patch
+            LATEST_COMMIT_MSG=$(git log -1 --pretty=%B)
+            if echo "$LATEST_COMMIT_MSG" | grep -q "^feat"; then
+              echo "Feature commit detected, will bump minor version"
+              npx nx release version minor
+            else
+              echo "Non-feature commit, will bump patch version"
+              npx nx release version patch
+            fi
+
             # Get the newly created version tag
             git fetch --tags
             VERSION=$(git tag -l | grep -E "^v[0-9]+\.[0-9]+\.[0-9]+$" | sort -V | tail -1)
@@ -138,22 +147,26 @@ jobs:
       - name: Add release notes to git tag
         run: bash .github/scripts/annotate-release-tag.sh
 
-      # Setup kubectl for deployment
+      # Setup kubectl and Helm for deployment
       - name: Setup kubectl
         run: |
           curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
           chmod +x kubectl
           sudo mv kubectl /usr/local/bin/
 
+      - name: Setup Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: 'latest'
+
       - name: Setup Kubernetes environment
         run: bash .github/scripts/setup-k8s.sh
 
-      # Deploy unified Ingress (must be done before project deployments)
-      - name: Deploy unified Ingress
-        run: |
-          envsubst < .github/templates/ingress.yaml | kubectl apply -f -
+      # Deploy infrastructure components (namespace, ingress) using Helm
+      - name: Deploy infrastructure components
+        run: bash .github/scripts/deploy-ingress.sh
 
-      # Deploy affected projects to Kubernetes
+      # Deploy affected projects to Kubernetes using Helm
       - name: Deploy affected projects to Kubernetes
         run: |
           npx nx affected -t deploy --base=${{ env.NX_BASE }} --head=${{ env.NX_HEAD }}

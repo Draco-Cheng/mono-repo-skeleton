@@ -1,0 +1,11 @@
+# Namespace name will be set via --set namespace.name in CI/CD
+namespace:
+  name: ""
+
+ingress:
+  className: traefik
+  rules:
+    - paths:
+        - path: /
+          serviceName: frontend-service
+          servicePort: 80

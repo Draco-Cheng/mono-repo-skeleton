@@ -62,7 +62,7 @@
     "deploy": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "envsubst < k8s/deployment.yaml | kubectl apply -f -",
+        "command": "helm upgrade --install backend helm --namespace ${K8S_NAMESPACE} --set image.repository=${DOCKER_USERNAME}/${REPO_NAME}_backend --set image.tag=${VERSION}",
         "cwd": "apps/backend"
       },
       "dependsOn": ["publish"]
