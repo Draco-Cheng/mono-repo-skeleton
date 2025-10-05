@@ -55,8 +55,7 @@
             "options": {
                 "command": "helm upgrade --install frontend helm --namespace ${K8S_NAMESPACE} --set image.repository=${DOCKER_USERNAME}/${REPO_NAME}_frontend --set image.tag=${VERSION}",
                 "cwd": "apps/frontend"
-            },
-            "dependsOn": ["publish"]
+            }
         }
     }
 }

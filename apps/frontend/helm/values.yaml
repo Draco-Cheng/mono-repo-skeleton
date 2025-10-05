@@ -2,7 +2,7 @@ service:
   type: NodePort
   port: 80
   targetPort: 3000
-  nodePort: 30301
+  nodePort: 30300
 
 resources:
   requests:
