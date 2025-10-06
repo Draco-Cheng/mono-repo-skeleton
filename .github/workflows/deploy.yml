@@ -164,7 +164,7 @@ jobs:
 
       # Deploy infrastructure components (namespace, ingress) using Helm
       - name: Deploy infrastructure components
-        run: bash .github/scripts/deploy-ingress.sh
+        run: bash .github/scripts/deploy-infra.sh
 
       # Deploy affected projects to Kubernetes using Helm
       - name: Deploy affected projects to Kubernetes

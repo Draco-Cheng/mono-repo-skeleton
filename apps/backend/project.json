@@ -62,7 +62,7 @@
     "deploy": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "helm upgrade --install backend helm --namespace ${K8S_NAMESPACE} --set image.repository=${DOCKER_USERNAME}/${REPO_NAME}_backend --set image.tag=${VERSION}",
+        "command": "helm upgrade --install backend-${K8S_NAMESPACE} helm --namespace ${K8S_NAMESPACE} --set image.repository=${DOCKER_USERNAME}/${REPO_NAME}_backend --set image.tag=${VERSION}",
         "cwd": "apps/backend"
       }
     }

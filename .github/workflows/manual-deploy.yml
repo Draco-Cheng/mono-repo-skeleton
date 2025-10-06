@@ -101,11 +101,13 @@ jobs:
             echo "Waiting for namespace deletion to complete..."
             kubectl wait --for=delete namespace/${K8S_NAMESPACE} --timeout=60s || true
           fi
-          echo "✅ Namespace cleaned, ready for deployment"
+          echo "Creating fresh namespace..."
+          kubectl create namespace ${K8S_NAMESPACE}
+          echo "✅ Namespace ready for deployment"
 
       # Deploy infrastructure components
       - name: Deploy infrastructure components
-        run: bash .github/scripts/deploy-ingress.sh
+        run: bash .github/scripts/deploy-infra.sh
 
       # Deploy selected apps using nx
       - name: Deploy apps
