@@ -13,6 +13,11 @@ on:
         required: true
         default: 'all'
         type: string
+      clean_namespace:
+        description: 'Clean namespace before deployment (delete and recreate)'
+        required: false
+        default: false
+        type: boolean
       reason:
         description: 'Reason for manual deployment'
         required: false
@@ -65,6 +70,7 @@ jobs:
           echo "========================================="
           echo "Version: ${VERSION}"
           echo "Apps: ${DEPLOY_APPS}"
+          echo "Clean Namespace: ${{ inputs.clean_namespace }}"
           echo "Reason: ${{ inputs.reason || 'Not specified' }}"
           echo "Triggered by: ${{ github.actor }}"
           echo "========================================="
@@ -83,6 +89,21 @@ jobs:
 
       - name: Setup Kubernetes environment
         run: bash .github/scripts/setup-k8s.sh
+
+      # Clean namespace if requested (fresh start)
+      - name: Clean namespace
+        if: inputs.clean_namespace == true
+        run: |
+          echo "🧹 Cleaning namespace ${K8S_NAMESPACE} for fresh deployment..."
+          if kubectl get namespace ${K8S_NAMESPACE} &> /dev/null; then
+            echo "Deleting existing namespace..."
+            kubectl delete namespace ${K8S_NAMESPACE}
+            echo "Waiting for namespace deletion to complete..."
+            kubectl wait --for=delete namespace/${K8S_NAMESPACE} --timeout=60s || true
+          fi
+          echo "Creating fresh namespace..."
+          kubectl create namespace ${K8S_NAMESPACE}
+          echo "✅ Namespace ready for deployment"
 
       # Deploy infrastructure components
       - name: Deploy infrastructure components
