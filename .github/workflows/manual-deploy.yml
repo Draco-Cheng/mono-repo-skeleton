@@ -101,9 +101,7 @@ jobs:
             echo "Waiting for namespace deletion to complete..."
             kubectl wait --for=delete namespace/${K8S_NAMESPACE} --timeout=60s || true
           fi
-          echo "Creating fresh namespace..."
-          kubectl create namespace ${K8S_NAMESPACE}
-          echo "✅ Namespace ready for deployment"
+          echo "✅ Namespace cleaned, ready for deployment"
 
       # Deploy infrastructure components
       - name: Deploy infrastructure components
