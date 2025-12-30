@@ -15,7 +15,7 @@ services:
       - "3000:3000"
     environment:
       - NODE_ENV=development
-      - BACKEND_HOST=host.docker.internal
+      - BACKEND_URL=http://backend:8000
     depends_on:
       - backend
 
