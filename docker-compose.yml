@@ -16,6 +16,8 @@ services:
     environment:
       - NODE_ENV=development
       - BACKEND_URL=http://backend:8000
+      - CHOKIDAR_USEPOLLING=true
+      - WATCHPACK_POLLING=true
     depends_on:
       - backend
 
