@@ -114,6 +114,55 @@ docker-compose down
 
 ---
 
+## ⚙️ GitHub Actions CI/CD Setup
+
+This project uses GitHub Actions for continuous integration and deployment. To enable the CI/CD pipelines, you need to configure the following secrets in your GitHub repository.
+
+### Setting Up GitHub Secrets
+
+Go to your GitHub repository settings: **Settings > Secrets and variables > Actions > New repository secret**
+
+### Required Secrets
+
+#### Docker Registry Credentials
+These secrets are used to push Docker images to Docker Hub:
+
+- **`DOCKER_USERNAME`**
+  - Your Docker Hub username
+  - Example: `myusername`
+
+- **`DOCKER_PASSWORD`**
+  - Your Docker Hub password or access token
+  - Recommended: Use an access token instead of your password
+  - [Create a Docker Hub access token](https://hub.docker.com/settings/security)
+
+#### Kubernetes Cluster Credentials
+These secrets are used to deploy applications to your Kubernetes cluster:
+
+- **`K8S_SERVER`**
+  - Kubernetes API server URL
+  - Example: `https://your-k8s-cluster.com:6443`
+  - How to get: Run `kubectl cluster-info` and use the API server URL
+
+- **`K8S_CA_DATA`**
+  - Kubernetes cluster CA certificate (base64 encoded)
+
+- **`K8S_CLIENT_CERT`**
+  - Kubernetes client certificate (base64 encoded)
+
+- **`K8S_CLIENT_KEY`**
+  - Kubernetes client private key (base64 encoded)
+
+### GitHub Actions Workflows
+
+The project includes the following workflows:
+
+- **`ci.yml`** - Runs tests and linting on pull requests
+- **`pr-validation.yml`** - Validates pull request format
+- **`e2e.yml`** - Runs end-to-end tests
+- **`deploy.yml`** - Automated deployment on push to main branch
+- **`manual-deploy.yml`** - Manual deployment workflow with version selection
+
 ## 🚀 Quick Start
 
 ### 1. Install Node.js dependencies
