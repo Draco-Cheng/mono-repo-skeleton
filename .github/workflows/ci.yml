@@ -56,10 +56,19 @@ jobs:
           python-version: 3.11
       - uses: astral-sh/setup-uv@v3
 
-      # Run all checks for affected projects except E2E
+      # Run all checks for affected projects
       - name: Run CI checks for affected projects
         run: |
           npx nx affected -t lint test build typecheck --base=${{ env.NX_BASE }} --head=${{ env.NX_HEAD }}
+
+      # Test Docker builds if Dockerfile or package.json changed
+      - name: Test Docker builds
+        run: |
+          if git diff --name-only ${{ env.NX_BASE }} ${{ env.NX_HEAD }} | grep -qE '(Dockerfile|package\.json)'; then
+            for project in $(npx nx show projects --affected --base=${{ env.NX_BASE }} --head=${{ env.NX_HEAD }}); do
+              [ -f "apps/$project/Dockerfile" ] && docker build --target production -t "$project:ci-test" apps/$project
+            done
+          fi
 
       # Check if E2E tests are affected
       - name: Check if E2E tests are affected
