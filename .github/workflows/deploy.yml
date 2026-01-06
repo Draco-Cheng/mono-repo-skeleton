@@ -30,7 +30,7 @@ jobs:
       DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
 
       # === Kubernetes ===
-      K8S_NAMESPACE: mono-repo-skeleton
+      K8S_NAMESPACE: personal-website
       K8S_CA_DATA: ${{ secrets.K8S_CA_DATA }}
       K8S_CLIENT_CERT: ${{ secrets.K8S_CLIENT_CERT }}
       K8S_CLIENT_KEY: ${{ secrets.K8S_CLIENT_KEY }}

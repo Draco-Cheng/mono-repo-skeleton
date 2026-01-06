@@ -9,7 +9,7 @@ This project is an Nx-managed monorepo supporting both TypeScript/Node.js and Py
 ## 🏗️ Project Structure
 
 ```
-mono-repo-skeleton/
+personal-website/
 ├── apps/
 │   ├── backend/                # FastAPI Python backend (API server)
 │   │   ├── main.py            # FastAPI application entry point
