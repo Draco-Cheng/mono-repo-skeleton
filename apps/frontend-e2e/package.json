@@ -1,6 +1,6 @@
 {
   "name": "frontend-e2e",
-  "version": "0.3.5",
+  "version": "0.3.6",
   "private": true,
   "scripts": {
     "e2e": "npx playwright test"
