@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Docker image version (e.g., v0.4.16 or latest)'
+        description: 'Docker image version (e.g., v0.4.16). Use "latest" to auto-detect the most recent semantic version tag.'
         required: true
         default: 'latest'
         type: string
@@ -63,12 +63,33 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Determine version to deploy
+        id: determine-version
+        run: |
+          INPUT_VERSION="${{ inputs.version }}"
+
+          if [ "$INPUT_VERSION" = "latest" ]; then
+            # Auto-detect latest semantic version
+            LATEST_VERSION=$(git tag -l 'v*.*.*' | sort -V | tail -1)
+            if [ -z "$LATEST_VERSION" ]; then
+              echo "❌ No semantic version tags found. Please create a version first."
+              exit 1
+            fi
+            echo "✅ Auto-detected latest version: $LATEST_VERSION"
+            echo "VERSION=$LATEST_VERSION" >> $GITHUB_ENV
+          else
+            # Use specified version
+            echo "✅ Using specified version: $INPUT_VERSION"
+            echo "VERSION=$INPUT_VERSION" >> $GITHUB_ENV
+          fi
+
       - name: Display deployment info
         run: |
           echo "========================================="
           echo "🚀 Manual Deployment Information"
           echo "========================================="
-          echo "Version: ${VERSION}"
+          echo "Requested Version: ${{ inputs.version }}"
+          echo "Deploying Version: ${VERSION}"
           echo "Apps: ${DEPLOY_APPS}"
           echo "Clean Namespace: ${{ inputs.clean_namespace }}"
           echo "Reason: ${{ inputs.reason || 'Not specified' }}"
