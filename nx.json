@@ -84,7 +84,7 @@
         "skipLockFileUpdate": true
       },
       "git": {
-        "commitMessage": "chore: release version {version}",
+        "commitMessage": "chore: release version {version} [skip ci]",
         "tagName": "v{version}",
         "commit": true,
         "tag": true,
