@@ -42,9 +42,12 @@ jobs:
       # === Kubernetes ===
       K8S_NAMESPACE: mono-repo-skeleton
       K8S_CA_DATA: ${{ secrets.K8S_CA_DATA }}
+      K8S_SERVER: ${{ secrets.K8S_SERVER }}
+      # Auth Method 1: Token-based (recommended for cloud providers)
+      K8S_USER_TOKEN: ${{ secrets.K8S_USER_TOKEN }}
+      # Auth Method 2: Certificate-based (if token not provided)
       K8S_CLIENT_CERT: ${{ secrets.K8S_CLIENT_CERT }}
       K8S_CLIENT_KEY: ${{ secrets.K8S_CLIENT_KEY }}
-      K8S_SERVER: ${{ secrets.K8S_SERVER }}
 
       # === Deployment settings ===
       VERSION: ${{ inputs.version }}
@@ -53,6 +56,9 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -99,7 +105,8 @@ jobs:
       # Setup kubectl and Helm
       - name: Setup kubectl
         run: |
-          curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+          KUBECTL_VERSION=$(curl -L -s https://dl.k8s.io/release/stable.txt)
+          curl -LO "https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl"
           chmod +x kubectl
           sudo mv kubectl /usr/local/bin/
 

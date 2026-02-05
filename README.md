@@ -137,7 +137,9 @@ These secrets are used to push Docker images to Docker Hub:
   - [Create a Docker Hub access token](https://hub.docker.com/settings/security)
 
 #### Kubernetes Cluster Credentials
-These secrets are used to deploy applications to your Kubernetes cluster:
+These secrets are used to deploy applications to your Kubernetes cluster. Two authentication methods are supported:
+
+**Common Settings (Required for both methods):**
 
 - **`K8S_SERVER`**
   - Kubernetes API server URL
@@ -146,12 +148,29 @@ These secrets are used to deploy applications to your Kubernetes cluster:
 
 - **`K8S_CA_DATA`**
   - Kubernetes cluster CA certificate (base64 encoded)
+  - How to get: `kubectl config view --raw -o jsonpath='{.clusters[0].cluster.certificate-authority-data}'`
+
+**Authentication Method 1: Token-based (Recommended for cloud providers)**
+
+Use this method if your cloud provider gives you a User Token or Service Account Token.
+
+- **`K8S_USER_TOKEN`**
+  - Kubernetes user token or service account token
+  - How to get: Check your cloud provider's dashboard or use `kubectl config view --raw -o jsonpath='{.users[0].user.token}'`
+
+**Authentication Method 2: Certificate-based**
+
+Use this method if your cluster uses TLS client certificates for authentication.
 
 - **`K8S_CLIENT_CERT`**
   - Kubernetes client certificate (base64 encoded)
+  - How to get: `kubectl config view --raw -o jsonpath='{.users[0].user.client-certificate-data}'`
 
 - **`K8S_CLIENT_KEY`**
   - Kubernetes client private key (base64 encoded)
+  - How to get: `kubectl config view --raw -o jsonpath='{.users[0].user.client-key-data}'`
+
+> **Note:** If `K8S_USER_TOKEN` is set, token-based authentication will be used. Otherwise, certificate-based authentication will be used.
 
 #### Optional Secrets
 

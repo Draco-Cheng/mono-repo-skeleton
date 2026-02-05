@@ -72,9 +72,12 @@ jobs:
       # === Kubernetes ===
       K8S_NAMESPACE: mono-repo-skeleton
       K8S_CA_DATA: ${{ secrets.K8S_CA_DATA }}
+      K8S_SERVER: ${{ secrets.K8S_SERVER }}
+      # Auth Method 1: Token-based (recommended for cloud providers)
+      K8S_USER_TOKEN: ${{ secrets.K8S_USER_TOKEN }}
+      # Auth Method 2: Certificate-based (if token not provided)
       K8S_CLIENT_CERT: ${{ secrets.K8S_CLIENT_CERT }}
       K8S_CLIENT_KEY: ${{ secrets.K8S_CLIENT_KEY }}
-      K8S_SERVER: ${{ secrets.K8S_SERVER }}
 
       # === GitHub context ===
       REPO_NAME: ${{ github.event.repository.name }}
