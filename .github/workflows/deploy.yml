@@ -21,7 +21,47 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # Job 1: Check if there are affected projects
+  check:
+    runs-on: ubuntu-latest
+    outputs:
+      has-affected: ${{ steps.check-affected.outputs.has-affected }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Set up base and head refs for nx affected
+      - name: Set base and head SHAs
+        uses: nrwl/nx-set-shas@v4
+        with:
+          main-branch-name: 'main'
+
+      - name: Check if there are affected projects
+        id: check-affected
+        run: |
+          AFFECTED=$(npx nx show projects --affected --base=${{ env.NX_BASE }} --head=${{ env.NX_HEAD }})
+          if [ -n "$AFFECTED" ]; then
+            echo "has-affected=true" >> $GITHUB_OUTPUT
+            echo "Affected projects found: $AFFECTED"
+          else
+            echo "has-affected=false" >> $GITHUB_OUTPUT
+            echo "No affected projects, skipping deployment"
+          fi
+
+  # Job 2: Deploy (only runs if there are affected projects)
   deploy:
+    needs: check
+    if: needs.check.outputs.has-affected == 'true'
     runs-on: ubuntu-latest
     env:
 
@@ -42,6 +82,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          # DEPLOY_KEY is optional - if not set, uses default GITHUB_TOKEN
+          # Set DEPLOY_KEY secret if you need to push tags/commits back to the repo
+          ssh-key: ${{ secrets.DEPLOY_KEY || '' }}
           fetch-depth: 0
 
       - name: Setup Node.js
@@ -52,7 +95,6 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
-
 
       # Python and UV setup for backend projects
       - uses: actions/setup-python@v4
@@ -66,20 +108,7 @@ jobs:
         with:
           main-branch-name: 'main'
 
-      - name: Check if there are affected projects
-        id: check-affected
-        run: |
-          AFFECTED=$(npx nx show projects --affected --base=${{ env.NX_BASE }} --head=${{ env.NX_HEAD }})
-          if [ -n "$AFFECTED" ]; then
-            echo "has-affected=true" >> $GITHUB_OUTPUT
-            echo "Affected projects found, will create new version"
-          else
-            echo "has-affected=false" >> $GITHUB_OUTPUT
-            echo "No affected projects, skipping version creation"
-          fi
-
       - name: Run nx release to generate version and tag
-        if: steps.check-affected.outputs.has-affected == 'true'
         run: |
           # Configure git for nx release
           git config user.name "GitHub Actions"
@@ -150,7 +179,8 @@ jobs:
       # Setup kubectl and Helm for deployment
       - name: Setup kubectl
         run: |
-          curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+          KUBECTL_VERSION=$(curl -L -s https://dl.k8s.io/release/stable.txt)
+          curl -LO "https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl"
           chmod +x kubectl
           sudo mv kubectl /usr/local/bin/
 

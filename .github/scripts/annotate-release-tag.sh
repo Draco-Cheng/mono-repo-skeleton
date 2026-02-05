@@ -3,6 +3,12 @@ set -e
 
 echo "=== Adding release notes to git tag ==="
 
+# Exit early if VERSION is not set
+if [ -z "$VERSION" ]; then
+  echo "VERSION is not set, skipping release notes"
+  exit 0
+fi
+
 # Get affected projects
 AFFECTED_PROJECTS=$(npx nx show projects --affected --base=$NX_BASE --head=$NX_HEAD | sed 's/^/  - /')
 

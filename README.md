@@ -153,6 +153,17 @@ These secrets are used to deploy applications to your Kubernetes cluster:
 - **`K8S_CLIENT_KEY`**
   - Kubernetes client private key (base64 encoded)
 
+#### Optional Secrets
+
+- **`DEPLOY_KEY`** *(Optional)*
+  - SSH deploy key for pushing tags/commits back to the repository
+  - If not set, the workflow uses the default `GITHUB_TOKEN` (sufficient for most read operations)
+  - Required if your workflow needs to push version tags or commits
+  - How to create:
+    1. Generate an SSH key pair: `ssh-keygen -t ed25519 -C "deploy-key" -f deploy_key`
+    2. Add the **public key** (`deploy_key.pub`) to your repo: **Settings > Deploy keys > Add deploy key** (enable "Allow write access")
+    3. Add the **private key** (`deploy_key`) content as the `DEPLOY_KEY` secret
+
 ### GitHub Actions Workflows
 
 The project includes the following workflows:
