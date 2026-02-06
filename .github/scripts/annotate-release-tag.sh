@@ -3,6 +3,10 @@ set -e
 
 echo "=== Adding release notes to git tag ==="
 
+# Configure git identity (required for annotated tags)
+git config user.name "GitHub Actions"
+git config user.email "actions@github.com"
+
 # Exit early if VERSION is not set
 if [ -z "$VERSION" ]; then
   echo "VERSION is not set, skipping release notes"

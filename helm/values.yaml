@@ -4,6 +4,7 @@ namespace:
 
 ingress:
   className: traefik
+  host: ""
   rules:
     - paths:
         - path: /

@@ -13,8 +13,8 @@ spec:
   {{- end }}
   rules:
   {{- range .Values.ingress.rules }}
-  - {{- if .host }}
-    host: {{ .host }}
+  - {{- if or .host $.Values.ingress.host }}
+    host: {{ .host | default $.Values.ingress.host }}
     {{- end }}
     http:
       paths:

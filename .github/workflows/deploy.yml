@@ -58,35 +58,98 @@ jobs:
             echo "No affected projects, skipping deployment"
           fi
 
-  # Job 2: Deploy (only runs if there are affected projects)
-  deploy:
+  # Job 2: Version — calculate and tag version (idempotent)
+  version:
     needs: check
     if: needs.check.outputs.has-affected == 'true'
     runs-on: ubuntu-latest
-    env:
-
-      # === Docker settings ===
-      DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
-      DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
-
-      # === Kubernetes ===
-      K8S_NAMESPACE: mono-repo-skeleton
-      K8S_CA_DATA: ${{ secrets.K8S_CA_DATA }}
-      K8S_SERVER: ${{ secrets.K8S_SERVER }}
-      # Auth Method 1: Token-based (recommended for cloud providers)
-      K8S_USER_TOKEN: ${{ secrets.K8S_USER_TOKEN }}
-      # Auth Method 2: Certificate-based (if token not provided)
-      K8S_CLIENT_CERT: ${{ secrets.K8S_CLIENT_CERT }}
-      K8S_CLIENT_KEY: ${{ secrets.K8S_CLIENT_KEY }}
-
-      # === GitHub context ===
-      REPO_NAME: ${{ github.event.repository.name }}
-      BRANCH_NAME: ${{ github.ref_name }}
+    outputs:
+      version: ${{ steps.set-version.outputs.version }}
+      nx-base: ${{ steps.set-shas.outputs.base }}
+      nx-head: ${{ steps.set-shas.outputs.head }}
     steps:
       - uses: actions/checkout@v4
         with:
-          # DEPLOY_KEY is optional - if not set, uses default GITHUB_TOKEN
-          # Set DEPLOY_KEY secret if you need to push tags/commits back to the repo
+          ssh-key: ${{ secrets.DEPLOY_KEY || '' }}
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Set base and head SHAs
+        id: set-shas
+        uses: nrwl/nx-set-shas@v4
+        with:
+          main-branch-name: 'main'
+
+      - name: Run nx release to generate version and tag (idempotent)
+        id: set-version
+        run: |
+          # Configure git for nx release
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+
+          # Check if current commit already has a version tag (idempotent re-run)
+          CURRENT_TAG=$(git tag --points-at HEAD | grep -E "^v[0-9]+\.[0-9]+\.[0-9]+$" | head -1)
+          if [ -n "$CURRENT_TAG" ]; then
+            echo "Current commit already tagged as $CURRENT_TAG, skipping version bump"
+            VERSION=$CURRENT_TAG
+          else
+            # Create initial semantic version tag if none exists
+            SEMANTIC_TAGS=$(git tag -l | grep -E "^v[0-9]+\.[0-9]+\.[0-9]+$" | head -1)
+            if [ -z "$SEMANTIC_TAGS" ]; then
+              echo "No semantic version tags found, creating initial v0.1.0 tag"
+              git tag v0.1.0
+              git push origin v0.1.0
+              VERSION="v0.1.0"
+            else
+              echo "Existing semantic version tags found: $SEMANTIC_TAGS"
+
+              # Check if latest commit is feat (for minor bump) or default to patch
+              LATEST_COMMIT_MSG=$(git log -1 --pretty=%B)
+              if echo "$LATEST_COMMIT_MSG" | grep -q "^feat"; then
+                echo "Feature commit detected, will bump minor version"
+                npx nx release version minor
+              else
+                echo "Non-feature commit, will bump patch version"
+                npx nx release version patch
+              fi
+
+              # Get the newly created version tag
+              git fetch --tags
+              VERSION=$(git tag -l | grep -E "^v[0-9]+\.[0-9]+\.[0-9]+$" | sort -V | tail -1)
+              echo "Latest version after nx release: $VERSION"
+            fi
+          fi
+
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Generated version: $VERSION"
+
+  # Job 3: Publish — build, push Docker images, retag, annotate release
+  publish:
+    needs: version
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ needs.version.outputs.version }}
+    env:
+      # === Docker settings ===
+      DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+      DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+      # === GitHub context ===
+      REPO_NAME: ${{ github.event.repository.name }}
+      BRANCH_NAME: ${{ github.ref_name }}
+      VERSION: ${{ needs.version.outputs.version }}
+      NX_BASE: ${{ needs.version.outputs.nx-base }}
+      NX_HEAD: ${{ needs.version.outputs.nx-head }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
           ssh-key: ${{ secrets.DEPLOY_KEY || '' }}
           fetch-depth: 0
 
@@ -104,47 +167,6 @@ jobs:
         with:
           python-version: 3.11
       - uses: astral-sh/setup-uv@v3
-
-      # Set up base and head refs for nx affected
-      - name: Set base and head SHAs
-        uses: nrwl/nx-set-shas@v4
-        with:
-          main-branch-name: 'main'
-
-      - name: Run nx release to generate version and tag
-        run: |
-          # Configure git for nx release
-          git config user.name "GitHub Actions"
-          git config user.email "actions@github.com"
-
-          # Create initial semantic version tag if none exists
-          SEMANTIC_TAGS=$(git tag -l | grep -E "^v[0-9]+\.[0-9]+\.[0-9]+$" | head -1)
-          if [ -z "$SEMANTIC_TAGS" ]; then
-            echo "No semantic version tags found, creating initial v0.1.0 tag"
-            git tag v0.1.0
-            git push origin v0.1.0
-            VERSION="v0.1.0"
-          else
-            echo "Existing semantic version tags found: $SEMANTIC_TAGS"
-
-            # Check if latest commit is feat (for minor bump) or default to patch
-            LATEST_COMMIT_MSG=$(git log -1 --pretty=%B)
-            if echo "$LATEST_COMMIT_MSG" | grep -q "^feat"; then
-              echo "Feature commit detected, will bump minor version"
-              npx nx release version minor
-            else
-              echo "Non-feature commit, will bump patch version"
-              npx nx release version patch
-            fi
-
-            # Get the newly created version tag
-            git fetch --tags
-            VERSION=$(git tag -l | grep -E "^v[0-9]+\.[0-9]+\.[0-9]+$" | sort -V | tail -1)
-            echo "Latest version after nx release: $VERSION"
-          fi
-
-          echo "VERSION=$VERSION" >> $GITHUB_ENV
-          echo "Generated version: $VERSION"
 
       - name: Identify affected projects
         run: |
@@ -178,6 +200,42 @@ jobs:
 
       - name: Add release notes to git tag
         run: bash .github/scripts/annotate-release-tag.sh
+
+  # Job 4: Deploy — setup K8S and deploy to cluster
+  deploy:
+    needs: [version, publish]
+    runs-on: ubuntu-latest
+    env:
+      # === Docker settings ===
+      DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+      # === Kubernetes ===
+      K8S_NAMESPACE: ${{ secrets.K8S_NAMESPACE || 'default' }}
+      K8S_CA_DATA: ${{ secrets.K8S_CA_DATA }}
+      K8S_SERVER: ${{ secrets.K8S_SERVER }}
+      K8S_USER_TOKEN: ${{ secrets.K8S_USER_TOKEN }}
+      K8S_CLIENT_CERT: ${{ secrets.K8S_CLIENT_CERT }}
+      K8S_CLIENT_KEY: ${{ secrets.K8S_CLIENT_KEY }}
+      # === Ingress ===
+      INGRESS_HOST: ${{ secrets.INGRESS_HOST }}
+      # === GitHub context ===
+      REPO_NAME: ${{ github.event.repository.name }}
+      BRANCH_NAME: ${{ github.ref_name }}
+      VERSION: ${{ needs.version.outputs.version }}
+      NX_BASE: ${{ needs.version.outputs.nx-base }}
+      NX_HEAD: ${{ needs.version.outputs.nx-head }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
 
       # Setup kubectl and Helm for deployment
       - name: Setup kubectl

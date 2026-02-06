@@ -40,7 +40,7 @@ jobs:
       DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
 
       # === Kubernetes ===
-      K8S_NAMESPACE: mono-repo-skeleton
+      K8S_NAMESPACE: ${{ secrets.K8S_NAMESPACE || 'default' }}
       K8S_CA_DATA: ${{ secrets.K8S_CA_DATA }}
       K8S_SERVER: ${{ secrets.K8S_SERVER }}
       # Auth Method 1: Token-based (recommended for cloud providers)
@@ -48,6 +48,8 @@ jobs:
       # Auth Method 2: Certificate-based (if token not provided)
       K8S_CLIENT_CERT: ${{ secrets.K8S_CLIENT_CERT }}
       K8S_CLIENT_KEY: ${{ secrets.K8S_CLIENT_KEY }}
+      # === Ingress ===
+      INGRESS_HOST: ${{ secrets.INGRESS_HOST }}
 
       # === Deployment settings ===
       VERSION: ${{ inputs.version }}

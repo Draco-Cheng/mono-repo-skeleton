@@ -174,6 +174,16 @@ Use this method if your cluster uses TLS client certificates for authentication.
 
 #### Optional Secrets
 
+- **`K8S_NAMESPACE`** *(Optional)*
+  - Kubernetes namespace for deployment
+  - Default: `default`
+  - Example: `my-app-production`
+
+- **`INGRESS_HOST`** *(Optional)*
+  - The hostname for the Kubernetes Ingress resource
+  - Example: `app.example.com`
+  - If not set, the Ingress will be created without a host (matches all hosts)
+
 - **`DEPLOY_KEY`** *(Optional)*
   - SSH deploy key for pushing tags/commits back to the repository
   - If not set, the workflow uses the default `GITHUB_TOKEN` (sufficient for most read operations)
