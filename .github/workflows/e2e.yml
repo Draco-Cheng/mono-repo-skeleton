@@ -30,7 +30,7 @@ jobs:
         with:
           node-version: 20
           cache: 'npm'
-      - run: npm ci --legacy-peer-deps
+      - run: npm ci
 
       # Python setup for backend
       - uses: actions/setup-python@v4
