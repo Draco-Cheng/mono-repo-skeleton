@@ -117,23 +117,36 @@ jobs:
             # write package.json — run with --dry-run and parse the version it would apply.
             FIRST_RELEASE_FLAG=""
             if [ -z "$PREV_TAG" ]; then FIRST_RELEASE_FLAG="--first-release"; fi
-            NEXT=$(npx nx release version --dry-run $FIRST_RELEASE_FLAG 2>&1 \
+            # grep exits 1 on "no match" (the expected outcome when there's nothing new
+            # to version) — as the pipeline's last command that would trip `set -e` and
+            # kill the script before the empty-$NEXT handling below ever runs. `|| true`
+            # keeps that a normal, non-fatal empty result.
+            NEXT=$( (npx nx release version --dry-run $FIRST_RELEASE_FLAG 2>&1 \
               | grep -oE "new version [0-9]+\.[0-9]+\.[0-9]+" | head -1 \
-              | grep -oE "[0-9]+\.[0-9]+\.[0-9]+")
+              | grep -oE "[0-9]+\.[0-9]+\.[0-9]+") || true)
 
             if [ -z "$NEXT" ]; then
-              echo "Could not determine next version from nx release; aborting"
-              exit 1
+              # No version-worthy nx changes since PREV_TAG (e.g. a prior run already
+              # tagged this range and only failed at a later job like deploy, or this
+              # push only touched non-nx files like CI scripts). Reuse PREV_TAG instead
+              # of aborting, so deploy can still run against the already-tagged version.
+              if [ -z "$PREV_TAG" ]; then
+                echo "Could not determine next version from nx release; aborting"
+                exit 1
+              fi
+              echo "No version-worthy changes since $PREV_TAG; reusing it"
+              VERSION="$PREV_TAG"
+              NX_BASE=$(git tag -l | grep -E "^v[0-9]+\.[0-9]+\.[0-9]+$" | sort -V | grep -vx "$VERSION" | tail -1)
+            else
+              VERSION="v$NEXT"
+              echo "Computed next version: $VERSION (from conventional commits, no manifest bump)"
+
+              # Tag-only: push just the tag. No commit goes back to main, so the next run's
+              # affected stays clean. A lightweight tag here is enriched into an annotated tag
+              # later by annotate-release-tag.sh (after affected projects are known).
+              git tag "$VERSION"
+              git push origin "$VERSION"
             fi
-
-            VERSION="v$NEXT"
-            echo "Computed next version: $VERSION (from conventional commits, no manifest bump)"
-
-            # Tag-only: push just the tag. No commit goes back to main, so the next run's
-            # affected stays clean. A lightweight tag here is enriched into an annotated tag
-            # later by annotate-release-tag.sh (after affected projects are known).
-            git tag "$VERSION"
-            git push origin "$VERSION"
           fi
 
           # First release (no prior tag): fall back to nx-set-shas base.
