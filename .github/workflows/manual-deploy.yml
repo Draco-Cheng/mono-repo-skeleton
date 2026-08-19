@@ -18,6 +18,10 @@ on:
         required: false
         default: false
         type: boolean
+      confirm_namespace:
+        description: 'Required ONLY if clean_namespace is checked: type the exact K8S_NAMESPACE value to confirm you want it deleted'
+        required: false
+        type: string
       reason:
         description: 'Reason for manual deployment'
         required: false
@@ -120,10 +124,17 @@ jobs:
       - name: Setup Kubernetes environment
         run: bash .github/scripts/setup-k8s.sh
 
-      # Clean namespace if requested (fresh start)
+      # Clean namespace if requested (fresh start). This namespace holds live
+      # production resources (see AI_README) so requires typing its exact name
+      # as confirm_namespace — a stray checkbox click can't delete it alone.
       - name: Clean namespace
         if: inputs.clean_namespace == true
         run: |
+          if [ "${{ inputs.confirm_namespace }}" != "${K8S_NAMESPACE}" ]; then
+            echo "❌ clean_namespace was checked but confirm_namespace ('${{ inputs.confirm_namespace }}') does not match K8S_NAMESPACE ('${K8S_NAMESPACE}')."
+            echo "   Re-run and type the namespace name exactly to confirm deletion."
+            exit 1
+          fi
           echo "🧹 Cleaning namespace ${K8S_NAMESPACE} for fresh deployment..."
           if kubectl get namespace ${K8S_NAMESPACE} &> /dev/null; then
             echo "Deleting existing namespace..."

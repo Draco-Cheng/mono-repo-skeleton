@@ -43,6 +43,7 @@ It describes the overall architecture, conventions, and best practices for this 
 - **TypeScript:** Use strict typing, prefer interfaces for props and API responses.
 - **Python:** Use type hints, keep config in `config.py` or `pyproject.toml`.
 - **Release is TAG-ONLY:** CD (`deploy.yml`) never bumps `package.json`/`pyproject.toml` or commits back to `main`. Version lives in the git tag; `nx release version --dry-run` computes it, then `git tag` pushes it directly. See `README.md` § Versioning.
+- `manual-deploy.yml`'s `clean_namespace` input deletes the live K8s namespace — gated behind `confirm_namespace` (must exactly match `K8S_NAMESPACE`, checked in the "Clean namespace" step) so a stray checkbox click can't wipe production.
 
 ---
 
