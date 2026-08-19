@@ -13,5 +13,6 @@ fi
 
 helm upgrade --install infra-${K8S_NAMESPACE} helm \
   $HELM_ARGS \
+  --namespace ${K8S_NAMESPACE} \
   --create-namespace
 echo "✓ Infrastructure deployed successfully"

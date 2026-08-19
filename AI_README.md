@@ -42,6 +42,7 @@ It describes the overall architecture, conventions, and best practices for this 
 - **Config:** Use language-native config files, but keep API prefixes and shared constants in a single place per language.
 - **TypeScript:** Use strict typing, prefer interfaces for props and API responses.
 - **Python:** Use type hints, keep config in `config.py` or `pyproject.toml`.
+- **Release is TAG-ONLY:** CD (`deploy.yml`) never bumps `package.json`/`pyproject.toml` or commits back to `main`. Version lives in the git tag; `nx release version --dry-run` computes it, then `git tag` pushes it directly. See `README.md` § Versioning.
 
 ---
 

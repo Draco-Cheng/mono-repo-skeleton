@@ -1,7 +1,17 @@
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import Menu from "../components/templates/Menu";
+import UpdatePrompt from "../components/atoms/UpdatePrompt";
 
-// Minimal layout for the frontend app with a top menu
+export const metadata: Metadata = {
+  title: "Mono Repo Skeleton",
+  description: "Mono Repo Skeleton - Next.js Frontend",
+};
+
+export const viewport: Viewport = {
+  themeColor: "#171717",
+};
+
 export default function RootLayout({
   children,
 }: {
@@ -12,6 +22,7 @@ export default function RootLayout({
       <body>
         <Menu />
         {children}
+        <UpdatePrompt />
       </body>
     </html>
   );

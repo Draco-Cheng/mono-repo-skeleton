@@ -1,21 +1,20 @@
-# Backend Dockerfile for FastAPI (development)
-FROM python:3.11-slim
+# Backend Dockerfile for FastAPI
+# Build context: apps/backend/
+FROM python:3.11-slim AS base
 
-# Set working directory
 WORKDIR /app
 
-# Install pip and setuptools
 RUN pip install --upgrade pip setuptools
 
-# Copy pyproject.toml and install dependencies
-COPY pyproject.toml ./
-RUN pip install .
+# Copy and install dependencies first (for layer caching)
+COPY pyproject.toml .
+RUN pip install --no-cache-dir .
 
-# Copy the rest of the source code
+# Production stage
+FROM base AS production
+
 COPY . .
 
-# Expose FastAPI default port
 EXPOSE 8000
 
-# Start FastAPI app with reload for development
-CMD ["uvicorn", "main:app", "--reload", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
