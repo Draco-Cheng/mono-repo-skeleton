@@ -184,24 +184,28 @@ Use this method if your cluster uses TLS client certificates for authentication.
   - Example: `app.example.com`
   - If not set, the Ingress will be created without a host (matches all hosts)
 
-- **`DEPLOY_KEY`** *(Optional)*
-  - SSH deploy key for pushing tags/commits back to the repository
-  - If not set, the workflow uses the default `GITHUB_TOKEN` (sufficient for most read operations)
-  - Required if your workflow needs to push version tags or commits
-  - How to create:
-    1. Generate an SSH key pair: `ssh-keygen -t ed25519 -C "deploy-key" -f deploy_key`
-    2. Add the **public key** (`deploy_key.pub`) to your repo: **Settings > Deploy keys > Add deploy key** (enable "Allow write access")
-    3. Add the **private key** (`deploy_key`) content as the `DEPLOY_KEY` secret
-
 ### GitHub Actions Workflows
 
 The project includes the following workflows:
 
-- **`ci.yml`** - Runs tests and linting on pull requests
+- **`ci.yml`** - Runs lint/test/build/typecheck (+ Docker build smoke test, E2E when affected) on pull requests
 - **`pr-validation.yml`** - Validates pull request format
 - **`e2e.yml`** - Runs end-to-end tests
-- **`deploy.yml`** - Automated deployment on push to main branch
+- **`deploy.yml`** - CD: versions, builds/publishes Docker images, and deploys on push to main
 - **`manual-deploy.yml`** - Manual deployment workflow with version selection
+
+### Versioning (tag-only release)
+
+`deploy.yml` computes the next version from [conventional commits](https://www.conventionalcommits.org/)
+(`nx release version --dry-run`, config in `nx.json`) and pushes it as a git tag —
+it never bumps `package.json`/`pyproject.toml` or commits back to `main`. This keeps
+`nx affected` accurate: a version-bump commit would otherwise touch every project that
+depends on a shared library, making each release rebuild everything regardless of what
+actually changed. `VERSION` everywhere (Docker tags, Helm releases) comes from the git
+tag, and `deploy.yml`'s `nx affected` base is the previous release tag rather than the
+default `nx-set-shas` base.
+
+The default `GITHUB_TOKEN` is sufficient to push tags — no SSH deploy key needed.
 
 ## 🚀 Quick Start
 

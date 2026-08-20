@@ -1,6 +1,6 @@
 {
   "name": "frontend",
-  "version": "0.3.8",
+  "version": "0.0.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -12,9 +12,11 @@
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
+    "@serwist/next": "^9.5.6",
     "next": "15.4.6",
     "react": "19.1.0",
-    "react-dom": "19.1.0"
+    "react-dom": "19.1.0",
+    "serwist": "^9.5.6"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",

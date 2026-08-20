@@ -79,23 +79,7 @@
     },
     "version": {
       "conventionalCommits": true,
-      "fallbackCurrentVersionResolver": "disk",
-      "versionActionsOptions": {
-        "skipLockFileUpdate": true
-      },
-      "git": {
-        "commitMessage": "chore: release version {version} [skip ci]",
-        "tagName": "v{version}",
-        "commit": true,
-        "tag": true,
-        "push": true
-      }
-    },
-    "changelog": {
-      "projectChangelogs": true,
-      "git": {
-        "commit": true
-      }
+      "fallbackCurrentVersionResolver": "disk"
     }
   }
 }

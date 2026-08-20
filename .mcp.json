@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "ai-readme-manager": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "ai-readme-mcp@latest"
+      ],
+      "env": {}
+    }
+  }
+}

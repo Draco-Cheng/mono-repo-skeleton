@@ -65,12 +65,16 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.set-version.outputs.version }}
-      nx-base: ${{ steps.set-shas.outputs.base }}
+      # Tag-only release: we never bump package.json (all projects are private:true and
+      # are deployed as Docker images, never npm-published — the version lives entirely in
+      # the git tag). So no release commit is pushed to main, and affected can use the
+      # previous tag as base with no version-bump noise to skip.
+      nx-base: ${{ steps.set-version.outputs.nx-base }}
       nx-head: ${{ steps.set-shas.outputs.head }}
     steps:
       - uses: actions/checkout@v4
         with:
-          ssh-key: ${{ secrets.DEPLOY_KEY || '' }}
+          token: ${{ secrets.GITHUB_TOKEN }}
           fetch-depth: 0
 
       - name: Setup Node.js
@@ -88,48 +92,66 @@ jobs:
         with:
           main-branch-name: 'main'
 
-      - name: Run nx release to generate version and tag (idempotent)
+      - name: Compute version and create git tag (tag-only, idempotent)
         id: set-version
         run: |
-          # Configure git for nx release
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
+          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
 
-          # Check if current commit already has a version tag (idempotent re-run)
-          CURRENT_TAG=$(git tag --points-at HEAD | grep -E "^v[0-9]+\.[0-9]+\.[0-9]+$" | head -1)
-          if [ -n "$CURRENT_TAG" ]; then
-            echo "Current commit already tagged as $CURRENT_TAG, skipping version bump"
-            VERSION=$CURRENT_TAG
-          else
-            # Create initial semantic version tag if none exists
-            SEMANTIC_TAGS=$(git tag -l | grep -E "^v[0-9]+\.[0-9]+\.[0-9]+$" | head -1)
-            if [ -z "$SEMANTIC_TAGS" ]; then
-              echo "No semantic version tags found, creating initial v0.1.0 tag"
-              git tag v0.1.0
-              git push origin v0.1.0
-              VERSION="v0.1.0"
+          list_tags() { git tag -l | grep -E "^v[0-9]+\.[0-9]+\.[0-9]+$" | sort -V; }
+
+          # HEAD may already be tagged from a prior run of this same commit (e.g. version
+          # succeeded but a later job like deploy failed). Reuse that tag instead of asking
+          # nx to compute a new one, so re-runs stay idempotent.
+          VERSION=$(list_tags | grep -Fx "$(git tag --points-at HEAD | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -1)" || true)
+
+          if [ -z "$VERSION" ]; then
+            PREV_TAG=$(list_tags | tail -1)
+            FIRST_RELEASE_FLAG=""
+            if [ -z "$PREV_TAG" ]; then FIRST_RELEASE_FLAG="--first-release"; fi
+
+            # Let nx compute the next version from conventional commits, but DON'T let it
+            # write package.json — run with --dry-run and parse the version it would apply.
+            # "new version X.Y.Z" is absent whenever nx finds nothing version-worthy (e.g.
+            # this push only touched non-nx files); `|| true` on the whole pipeline stops
+            # that legitimate empty result from tripping `set -e` on grep's no-match exit.
+            NEXT=$(npx nx release version --dry-run $FIRST_RELEASE_FLAG 2>&1 \
+              | { grep -oE "new version [0-9]+\.[0-9]+\.[0-9]+" || true; } \
+              | head -1 | grep -oE "[0-9]+\.[0-9]+\.[0-9]+" || true)
+
+            if [ -n "$NEXT" ]; then
+              VERSION="v$NEXT"
+              echo "Computed next version: $VERSION (from conventional commits, no manifest bump)"
+              # Tag-only: push just the tag. No commit goes back to main, so the next run's
+              # affected stays clean. A lightweight tag here is enriched into an annotated tag
+              # later by annotate-release-tag.sh (after affected projects are known).
+              git tag "$VERSION"
+              git push origin "$VERSION"
+            elif [ -n "$PREV_TAG" ]; then
+              echo "No version-worthy changes since $PREV_TAG; reusing it"
+              VERSION="$PREV_TAG"
             else
-              echo "Existing semantic version tags found: $SEMANTIC_TAGS"
-
-              # Check if latest commit is feat (for minor bump) or default to patch
-              LATEST_COMMIT_MSG=$(git log -1 --pretty=%B)
-              if echo "$LATEST_COMMIT_MSG" | grep -q "^feat"; then
-                echo "Feature commit detected, will bump minor version"
-                npx nx release version minor
-              else
-                echo "Non-feature commit, will bump patch version"
-                npx nx release version patch
-              fi
-
-              # Get the newly created version tag
-              git fetch --tags
-              VERSION=$(git tag -l | grep -E "^v[0-9]+\.[0-9]+\.[0-9]+$" | sort -V | tail -1)
-              echo "Latest version after nx release: $VERSION"
+              echo "Could not determine next version from nx release; aborting"
+              exit 1
             fi
+          else
+            echo "HEAD already tagged $VERSION, reusing"
+          fi
+
+          # Affected base = the tag before VERSION. With tag-only releases nothing is
+          # committed between tags, so prev-tag..HEAD is exactly the real change set.
+          # No prior tag at all (first release) falls back to nx-set-shas's own base.
+          NX_BASE=$(list_tags | grep -vx "$VERSION" | tail -1)
+          if [ -z "$NX_BASE" ]; then
+            NX_BASE="${{ steps.set-shas.outputs.base }}"
+            echo "No previous tag; falling back to nx-set-shas base $NX_BASE"
           fi
 
           echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "nx-base=$NX_BASE" >> $GITHUB_OUTPUT
           echo "Generated version: $VERSION"
+          echo "Affected base (nx-base): $NX_BASE"
 
   # Job 3: Publish — build, push Docker images, retag, annotate release
   publish:
@@ -150,7 +172,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ssh-key: ${{ secrets.DEPLOY_KEY || '' }}
+          token: ${{ secrets.GITHUB_TOKEN }}
           fetch-depth: 0
 
       - name: Setup Node.js
