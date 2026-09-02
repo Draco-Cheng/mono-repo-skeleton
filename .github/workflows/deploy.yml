@@ -46,16 +46,46 @@ jobs:
         with:
           main-branch-name: 'main'
 
+      # Infrastructure lives OUTSIDE the nx project graph, so `nx affected`
+      # cannot see it: helm/ (the shared ingress/cluster-issuer chart) belongs
+      # to no project, and .github/scripts/ is what applies it. A commit
+      # touching only those returns an empty affected list and the deploy is
+      # skipped -- a green check that deploys nothing (confirmed on
+      # yi-ying-orchids, derived from this template; see PR #231 there).
+      #
+      # Checked separately with git rather than by inventing an nx project for
+      # helm/: those paths have no build, test or lint target, and a synthetic
+      # project would have to be excluded from every run-many in the repo.
+      - name: Check for infrastructure changes
+        id: check-infra
+        run: |
+          CHANGED=$(git diff --name-only ${{ env.NX_BASE }} ${{ env.NX_HEAD }} -- helm/ .github/scripts/ || true)
+          if [ -n "$CHANGED" ]; then
+            echo "has-infra=true" >> $GITHUB_OUTPUT
+            echo "Infrastructure changes found:"
+            echo "$CHANGED"
+          else
+            echo "has-infra=false" >> $GITHUB_OUTPUT
+            echo "No infrastructure changes"
+          fi
+
       - name: Check if there are affected projects
         id: check-affected
         run: |
           AFFECTED=$(npx nx show projects --affected --base=${{ env.NX_BASE }} --head=${{ env.NX_HEAD }})
           if [ -n "$AFFECTED" ]; then
-            echo "has-affected=true" >> $GITHUB_OUTPUT
             echo "Affected projects found: $AFFECTED"
           else
+            echo "No affected projects"
+          fi
+          # Deploy when EITHER is true. An infra-only change still needs the
+          # deploy job, which is what runs deploy-infra.sh; the publish job
+          # below no-ops on its own when nx finds nothing to build.
+          if [ -n "$AFFECTED" ] || [ "${{ steps.check-infra.outputs.has-infra }}" = "true" ]; then
+            echo "has-affected=true" >> $GITHUB_OUTPUT
+          else
             echo "has-affected=false" >> $GITHUB_OUTPUT
-            echo "No affected projects, skipping deployment"
+            echo "Nothing to deploy, skipping"
           fi
 
   # Job 2: Version — calculate and tag version (idempotent)
@@ -184,11 +214,45 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # Same cache the CI workflow keeps, and it is the SAME nx cache: the
+      # `lint build` step below runs the identical cacheable targets CI already
+      # ran on this commit, so on a normal main-branch merge these are cache
+      # hits rather than a second full rebuild.
+      #
+      # Cache-miss is the safe direction -- a miss rebuilds, it does not deploy
+      # something stale. Docker image builds in `publish` are not covered here;
+      # they are not nx-cacheable and pull their own layer cache from the
+      # registry.
+      - name: Cache nx computation
+        uses: actions/cache@v4
+        with:
+          path: .nx/cache
+          key: nx-${{ runner.os }}-${{ github.sha }}
+          restore-keys: |
+            nx-${{ runner.os }}-
+
       # Python and UV setup for backend projects
       - uses: actions/setup-python@v4
         with:
           python-version: 3.11
       - uses: astral-sh/setup-uv@v3
+        with:
+          # backend:build is `uv sync --extra dev`, so this job pays for a full
+          # environment rebuild without it. Keyed on the lockfile so a
+          # dependency change invalidates rather than reusing stale packages.
+          enable-cache: true
+          cache-dependency-glob: "apps/backend/uv.lock"
+          # The post-job `uv cache prune --ci` hangs and is killed at exactly
+          # 5m00s on every run, logging "failed with exit code 2". Harmless --
+          # it runs after the job's real work and does not fail the build --
+          # but it adds 5 minutes of wall clock to every run and puts a red
+          # error in an otherwise green log, which trains people to ignore
+          # errors there.
+          #
+          # Pruning only shrinks what gets uploaded; the cache is correct
+          # without it. Keyed on uv.lock, so a stale entry is invalidated by
+          # the lockfile rather than by pruning.
+          prune-cache: false
 
       - name: Identify affected projects
         run: |

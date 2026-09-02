@@ -10,7 +10,9 @@
       "default"
     ],
     "sharedGlobals": [
-      "{workspaceRoot}/.github/workflows/ci.yml"
+      "{workspaceRoot}/.github/workflows/ci.yml",
+      "{workspaceRoot}/.github/workflows/deploy.yml",
+      "{workspaceRoot}/.github/workflows/e2e.yml"
     ]
   },
   "plugins": [
@@ -47,8 +49,39 @@
       ]
     },
     "test": {
+      "cache": true,
       "dependsOn": [
         "^build"
+      ],
+      "inputs": [
+        "default",
+        "^default"
+      ]
+    },
+    "lint": {
+      "cache": true,
+      "inputs": [
+        "default"
+      ]
+    },
+    "build": {
+      "cache": true,
+      "dependsOn": [
+        "^build"
+      ],
+      "inputs": [
+        "default",
+        "^default"
+      ]
+    },
+    "typecheck": {
+      "cache": true,
+      "dependsOn": [
+        "^build"
+      ],
+      "inputs": [
+        "default",
+        "^default"
       ]
     }
   },

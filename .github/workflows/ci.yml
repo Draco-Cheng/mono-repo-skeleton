@@ -50,12 +50,45 @@ jobs:
           echo "NX_HEAD: ${{ env.NX_HEAD }}"
           echo "Affected projects:"
           npx nx show projects --affected --base=${{ env.NX_BASE }} --head=${{ env.NX_HEAD }}
-          
+
+      # Restore nx's local computation cache between runs. Without this every
+      # run recomputes all targets even when their inputs are unchanged --
+      # e.g. a backend-only PR still paid for both Angular builds.
+      #
+      # `restore-keys` matters more than the exact key here: a run whose inputs
+      # differ still starts from the most recent cache and only recomputes the
+      # targets that actually changed, rather than from empty.
+      - name: Cache nx computation
+        uses: actions/cache@v4
+        with:
+          path: .nx/cache
+          key: nx-${{ runner.os }}-${{ github.sha }}
+          restore-keys: |
+            nx-${{ runner.os }}-
+
       # Python and UV setup for backend projects
       - uses: actions/setup-python@v4
         with:
           python-version: 3.11
       - uses: astral-sh/setup-uv@v3
+        with:
+          # `uv sync --extra dev` runs once per backend target (build, lint,
+          # test), and without this each one rebuilds the environment from
+          # scratch. Keyed on the lockfile so a dependency change invalidates
+          # it rather than silently reusing stale packages.
+          enable-cache: true
+          cache-dependency-glob: "apps/backend/uv.lock"
+          # The post-job `uv cache prune --ci` hangs and is killed at exactly
+          # 5m00s on every run, logging "failed with exit code 2". Harmless --
+          # it runs after the job's real work and does not fail the build --
+          # but it adds 5 minutes of wall clock to every run and puts a red
+          # error in an otherwise green log, which trains people to ignore
+          # errors there.
+          #
+          # Pruning only shrinks what gets uploaded; the cache is correct
+          # without it. Keyed on uv.lock, so a stale entry is invalidated by
+          # the lockfile rather than by pruning.
+          prune-cache: false
 
       # Run all checks for affected projects
       - name: Run CI checks for affected projects
