@@ -32,10 +32,40 @@ jobs:
           cache: 'npm'
       - run: npm ci
 
+      # Same nx cache as ci.yml and deploy.yml. `nx build backend frontend`
+      # below is cacheable; the `e2e` target deliberately is not (it drives a
+      # live browser against live services, so a replayed cache entry would
+      # report a pass nothing actually ran).
+      - name: Cache nx computation
+        uses: actions/cache@v4
+        with:
+          path: .nx/cache
+          key: nx-${{ runner.os }}-${{ github.sha }}
+          restore-keys: |
+            nx-${{ runner.os }}-
+
       # Python setup for backend
       - uses: actions/setup-python@v4
         with:
           python-version: 3.11
+      # backend:build IS `uv sync --extra dev`, so uv has to exist here. It was
+      # missing entirely -- latent because this workflow's schedule is
+      # commented out, so it only runs when someone dispatches it by hand.
+      - uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+          cache-dependency-glob: "apps/backend/uv.lock"
+          # The post-job `uv cache prune --ci` hangs and is killed at exactly
+          # 5m00s on every run, logging "failed with exit code 2". Harmless --
+          # it runs after the job's real work and does not fail the build --
+          # but it adds 5 minutes of wall clock to every run and puts a red
+          # error in an otherwise green log, which trains people to ignore
+          # errors there.
+          #
+          # Pruning only shrinks what gets uploaded; the cache is correct
+          # without it. Keyed on uv.lock, so a stale entry is invalidated by
+          # the lockfile rather than by pruning.
+          prune-cache: false
 
       # Install main browsers (Chromium, Firefox, Webkit)
       - name: Install Playwright dependencies

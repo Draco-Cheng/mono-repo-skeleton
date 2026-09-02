@@ -39,7 +39,7 @@
     "test": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "python -m pytest -v",
+        "command": "python -m pytest",
         "cwd": "apps/backend"
       },
       "dependsOn": ["deps"]
