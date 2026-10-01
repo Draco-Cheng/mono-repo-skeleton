@@ -10,7 +10,7 @@ It describes the overall architecture, conventions, and best practices for this 
 - **Monorepo manager:** Nx
 - **Languages:** TypeScript (frontend), Python (backend)
 - **Frontend:** Next.js 15+ (App Router, Atomic Design, CSS Modules)
-- **Backend:** FastAPI (Python 3.10+)
+- **Backend:** FastAPI (Python 3.11+)
 - **Component Architecture:** Atomic Design (atoms, molecules, organisms, templates, pages)
 - **API Convention:** All backend endpoints are prefixed with `/api`
 - **Scripts:** Cross-language scripts in `/scripts`
