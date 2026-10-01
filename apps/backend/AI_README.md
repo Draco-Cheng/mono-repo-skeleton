@@ -8,8 +8,8 @@ It describes the architecture, conventions, and best practices for the backend a
 ## Framework & Stack
 
 - **Framework:** FastAPI
-- **Language:** Python 3.10+
-- **Dependency Management:** `pyproject.toml` (PEP 621), `uv` or `pip`
+- **Language:** Python 3.11+ (`tomllib` is stdlib only from 3.11; a lower `requires-python` makes ruff sort it as third-party)
+- **Dependency Management:** `pyproject.toml` (PEP 621), `uv` (dev + CI + Docker image all install from `uv.lock` — `pip install .` re-resolves independently and silently drifts; see `tests/test_production_dependencies.py`)
 - **Virtual Environment:** `.venv` (auto-created by scripts)
 - **API Convention:** All endpoints are prefixed with `/api` (see `config.py`)
 - **Scripts:** Use root-level scripts for install/start (`scripts/`)
@@ -17,30 +17,10 @@ It describes the architecture, conventions, and best practices for the backend a
 
 ---
 
-## Directory Structure
-
-```
-apps/backend/
-├── main.py           # FastAPI app entrypoint
-├── config.py         # Centralized backend config (API_PREFIX, etc.)
-├── pyproject.toml    # Python project metadata and dependencies
-├── project.json      # Nx targets for build/serve/test
-├── pytest.ini       # pytest configuration
-├── tests/            # Test suite
-├── Dockerfile        # Container configuration
-└── .dockerignore     # Docker ignore patterns
-```
-
----
-
 ## Conventions
 
-- **API Prefix:** Import from `config.py` for all route definitions.
-- **Type Hints:** Use Python type hints for all function signatures and API responses.
-- **Project Metadata:** Use `pyproject.toml` for dependencies and project info.
-- **Scripts:** Use root-level batch scripts for install/start to ensure venv is activated.
-- **Nx Integration:** Nx targets in `project.json` call scripts for build/serve/test.
-- **Testing:** Follow pytest conventions, use descriptive test names, test both success and error cases.
+- API prefix: import from `config.py` for all route definitions — never hardcode `/api`.
+- EVERY nx target goes through `uv` (`uv sync` / `uv run`) — a bare `pip install` or `python` resolves against system Python, not `.venv`, so it silently ignores `uv.lock` and can run a Python below the floor.
 
 ---
 

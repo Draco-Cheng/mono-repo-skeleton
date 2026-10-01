@@ -30,18 +30,39 @@ jobs:
         with:
           node-version: 20
           cache: 'npm'
-      - run: npm ci
+
+      # Same installed-tree cache as ci.yml -- see that file for why the npm
+      # cache alone is not enough and why there are no restore-keys.
+      - name: Restore node_modules
+        id: node-modules-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            node_modules
+            apps/*/node_modules
+            packages/*/node_modules
+          key: node-modules-v2-${{ runner.os }}-node20-${{ hashFiles('package-lock.json') }}
+
+      # Skipped on a hit: `npm ci` DELETES node_modules before installing.
+      - name: Install dependencies
+        if: steps.node-modules-cache.outputs.cache-hit != 'true'
+        run: npm ci
 
       # Same nx cache as ci.yml and deploy.yml. `nx build backend frontend`
       # below is cacheable; the `e2e` target deliberately is not (it drives a
       # live browser against live services, so a replayed cache entry would
       # report a pass nothing actually ran).
-      - name: Cache nx computation
-        uses: actions/cache@v4
+      #
+      # RESTORE-ONLY. A `${{ github.sha }}` key never hits yet always saves, so
+      # each run minted another 300-400 MB entry; ci.yml on `main` is the sole
+      # writer now. See ci.yml for the full account.
+      - name: Restore nx computation cache
+        uses: actions/cache/restore@v4
         with:
           path: .nx/cache
-          key: nx-${{ runner.os }}-${{ github.sha }}
+          key: nx-${{ runner.os }}-${{ github.ref_name }}
           restore-keys: |
+            nx-${{ runner.os }}-main
             nx-${{ runner.os }}-
 
       # Python setup for backend
@@ -67,9 +88,25 @@ jobs:
           # the lockfile rather than by pruning.
           prune-cache: false
 
-      # Install main browsers (Chromium, Firefox, Webkit)
+      # Same browser cache ci.yml writes from `main`, restored here rather
+      # than re-downloading several hundred MB on every manual run. Nothing
+      # is saved back: ci.yml owns this key.
+      - name: Restore Playwright browsers
+        id: playwright-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      # Install main browsers (Chromium, Firefox, Webkit). On a hit only the
+      # OS-level shared libs are installed -- fast, apt with nothing to fetch.
       - name: Install Playwright dependencies
-        run: npx playwright install chromium firefox webkit --with-deps
+        run: |
+          if [ "${{ steps.playwright-cache.outputs.cache-hit }}" = "true" ]; then
+            npx playwright install-deps chromium firefox webkit
+          else
+            npx playwright install chromium firefox webkit --with-deps
+          fi
 
       # Build dependencies and run all E2E tests
       - name: Build and run all E2E tests

@@ -4,24 +4,26 @@
     "deps": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "pip install .[dev]",
+        "command": "uv sync --extra dev",
         "cwd": "apps/backend"
       }
     },
     "build": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "pip install .",
+        "command": "uv sync --frozen --extra dev",
         "cwd": "apps/backend"
       },
-      "dependsOn": ["deps"]
+      "dependsOn": [
+        "deps"
+      ]
     },
     "serve": {
       "executor": "nx:run-commands",
       "options": {
         "commands": [
           {
-            "command": "python -m uvicorn main:app --reload --host 0.0.0.0 --port 8000",
+            "command": "uv run python -m uvicorn main:app --reload --host 0.0.0.0 --port 8000",
             "forwardAllArgs": false
           }
         ],
@@ -31,26 +33,32 @@
     "lint": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "ruff check .",
+        "command": "uv run ruff check .",
         "cwd": "apps/backend"
       },
-      "dependsOn": ["deps"]
+      "dependsOn": [
+        "deps"
+      ]
     },
     "test": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "python -m pytest",
+        "command": "uv run python -m pytest",
         "cwd": "apps/backend"
       },
-      "dependsOn": ["deps"]
+      "dependsOn": [
+        "deps"
+      ]
     },
     "publish": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "docker build -t \"$DOCKER_USERNAME/${REPO_NAME}_backend:$VERSION\" -t \"$DOCKER_USERNAME/${REPO_NAME}_backend:latest\" . && docker push \"$DOCKER_USERNAME/${REPO_NAME}_backend:$VERSION\" && docker push \"$DOCKER_USERNAME/${REPO_NAME}_backend:latest\"",
+        "command": "docker buildx build --cache-from \"type=registry,ref=$DOCKER_USERNAME/${REPO_NAME}_backend:buildcache\" --cache-to \"type=registry,ref=$DOCKER_USERNAME/${REPO_NAME}_backend:buildcache,mode=max,image-manifest=true\" -t \"$DOCKER_USERNAME/${REPO_NAME}_backend:$VERSION\" -t \"$DOCKER_USERNAME/${REPO_NAME}_backend:latest\" --push .",
         "cwd": "apps/backend"
       },
-      "dependsOn": ["build"]
+      "dependsOn": [
+        "build"
+      ]
     },
     "retag": {
       "executor": "nx:run-commands",
