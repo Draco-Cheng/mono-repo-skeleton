@@ -3,6 +3,19 @@ name: CI
 on:
   pull_request:
     types: [opened, synchronize, reopened]
+    # Documentation-only changes. `nx affected` already resolves these to zero
+    # projects, so the run lints, tests and builds nothing -- but it still
+    # installs Node, restores caches and (for an E2E-affected PR) starts
+    # Postgres/Playwright deps to reach that conclusion.
+    #
+    # `.github/**` is deliberately absent -- a workflow change is exactly when
+    # CI should run, since nothing else validates it.
+    paths-ignore:
+      - 'docs/**'
+      - '**/AI_README.md'
+      - '**/README.md'
+      - 'LICENSE'
+      - '*.md'
   workflow_dispatch:
     inputs:
       reason:
@@ -34,7 +47,30 @@ jobs:
           node-version: 20
           cache: 'npm'
 
+      # Cache the INSTALLED TREE, not just the downloaded tarballs.
+      # setup-node's own `cache: npm` only stores the npm cache, so a hit still
+      # leaves `npm ci` to write out every file -- a disk-bound pass that costs
+      # real time with no change to the lockfile in between.
+      #
+      # RESTORE-ONLY here, and deliberately not the combined `actions/cache@v4`.
+      # That action saves in its post step from whatever ref it ran on, so on a
+      # PR it would write an entry under `refs/pull/N/merge` that no other PR
+      # (and no other workflow) can read -- a 1-use orphan every time. CD is the
+      # writer, since it runs on `main` where the entry is readable by everyone.
+      - name: Restore node_modules
+        id: node-modules-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            node_modules
+            apps/*/node_modules
+            packages/*/node_modules
+          key: node-modules-v2-${{ runner.os }}-node20-${{ hashFiles('package-lock.json') }}
+
+      # Skipped on a hit: `npm ci` DELETES node_modules before installing, so
+      # running it anyway would throw away the very thing just restored.
       - name: Install dependencies
+        if: steps.node-modules-cache.outputs.cache-hit != 'true'
         run: npm ci
 
       # Set up base and head refs for nx affected
@@ -58,12 +94,18 @@ jobs:
       # `restore-keys` matters more than the exact key here: a run whose inputs
       # differ still starts from the most recent cache and only recomputes the
       # targets that actually changed, rather than from empty.
-      - name: Cache nx computation
-        uses: actions/cache@v4
+      # RESTORE-ONLY on a PR. The save is CD's job, keyed on the branch name
+      # rather than the commit SHA: a per-commit key never hits (every push is
+      # a new commit) yet always saves, minting a new multi-hundred-MB entry on
+      # every push that only `restore-keys` would ever read -- enough of those
+      # fill the repo's cache quota and evict entries that actually get used.
+      - name: Restore nx computation cache
+        uses: actions/cache/restore@v4
         with:
           path: .nx/cache
-          key: nx-${{ runner.os }}-${{ github.sha }}
+          key: nx-${{ runner.os }}-${{ github.ref_name }}
           restore-keys: |
+            nx-${{ runner.os }}-main
             nx-${{ runner.os }}-
 
       # Python and UV setup for backend projects
@@ -128,10 +170,21 @@ jobs:
       # apt-installed OS-level deps (--with-deps) — those install into the
       # runner's system dirs, not a path actions/cache can restore, but they
       # were never the slow part; the multi-hundred-MB browser downloads were.
-      - name: Cache Playwright browsers
+      #
+      # This key is IDENTICAL across branches, and GitHub scopes a cache to the
+      # ref that wrote it. The combined `actions/cache@v4` action saves from
+      # whatever ref it ran on, so every PR once saved its own ~500 MB copy of
+      # the same browsers under the same key and could not read any of the
+      # others -- many copies, zero cross-PR hits.
+      #
+      # A PR still writes this one (see the save below) because CD never
+      # installs browsers. What stops the pile-up is the miss guard, not the
+      # ref: a PR that hits saves nothing, and a PR-ref entry is readable by
+      # later runs on that same PR.
+      - name: Restore Playwright browsers
         if: steps.check-e2e.outputs.e2e-affected == 'true'
         id: playwright-cache
-        uses: actions/cache@v4
+        uses: actions/cache/restore@v4
         with:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
@@ -155,4 +208,21 @@ jobs:
         if: steps.check-e2e.outputs.e2e-affected == 'true'
         run: |
           npx nx affected -t e2e --base=${{ env.NX_BASE }} --head=${{ env.NX_HEAD }}
+
+      # Save the cache only from here -- see the restore step above for why.
+      # `always()` so a red run still contributes: the work was already paid
+      # for, and a failing test says nothing about whether the browser
+      # binaries are valid. The `cache-hit != 'true'` guard is what keeps a
+      # PR safe to write: once any run has stored this key, every later run
+      # hits and saves nothing, so the many-copies-of-the-same-browsers
+      # problem cannot recur.
+      - name: Save Playwright browsers
+        if: >-
+          always()
+          && steps.check-e2e.outputs.e2e-affected == 'true'
+          && steps.playwright-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
 

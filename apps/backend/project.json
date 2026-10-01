@@ -47,7 +47,7 @@
     "publish": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "docker build -t \"$DOCKER_USERNAME/${REPO_NAME}_backend:$VERSION\" -t \"$DOCKER_USERNAME/${REPO_NAME}_backend:latest\" . && docker push \"$DOCKER_USERNAME/${REPO_NAME}_backend:$VERSION\" && docker push \"$DOCKER_USERNAME/${REPO_NAME}_backend:latest\"",
+        "command": "docker buildx build --cache-from \"type=registry,ref=$DOCKER_USERNAME/${REPO_NAME}_backend:buildcache\" --cache-to \"type=registry,ref=$DOCKER_USERNAME/${REPO_NAME}_backend:buildcache,mode=max,image-manifest=true\" -t \"$DOCKER_USERNAME/${REPO_NAME}_backend:$VERSION\" -t \"$DOCKER_USERNAME/${REPO_NAME}_backend:latest\" --push .",
         "cwd": "apps/backend"
       },
       "dependsOn": ["build"]

@@ -4,6 +4,19 @@ on:
   push:
     branches:
       - main
+    # The `check` job already resolves a docs-only merge to no affected
+    # projects and skips version/publish/deploy, but still installs Node and
+    # drives the nx graph to reach that conclusion. This skips the run itself.
+    #
+    # `.github/**` is deliberately absent -- a workflow change must still
+    # deploy, and infra changes under `.github/scripts/` are detected
+    # separately by check-infra.
+    paths-ignore:
+      - 'docs/**'
+      - '**/AI_README.md'
+      - '**/README.md'
+      - 'LICENSE'
+      - '*.md'
   workflow_dispatch:
     inputs:
       reason:
@@ -13,7 +26,10 @@ on:
 
 permissions:
   contents: write
-  actions: read
+  # `actions: write`, not read: the publish job deletes the previous nx cache
+  # entry before saving the replacement. actions/cache/save cannot overwrite an
+  # existing exact key, and a rolling key is the point.
+  actions: write
 
 # Ensure only one deployment runs at a time
 concurrency:
@@ -37,8 +53,45 @@ jobs:
           node-version: '20'
           cache: 'npm'
 
+      # Restore the installed tree rather than rebuilding it. All four jobs in
+      # this workflow run `npm ci` and none of them needs a freshly-built
+      # node_modules -- they drive the nx project graph. This job is the
+      # WRITER (see Save step below): it is the first job that installs, and
+      # the only trigger here is `push` to `main`, where the entry is
+      # readable by every later job and by CI's own restore-only step.
+      - name: Restore node_modules
+        id: node-modules-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            node_modules
+            apps/*/node_modules
+            packages/*/node_modules
+          key: node-modules-v2-${{ runner.os }}-node20-${{ hashFiles('package-lock.json') }}
+
+      # Skipped on a hit: `npm ci` DELETES node_modules before installing.
       - name: Install dependencies
+        if: steps.node-modules-cache.outputs.cache-hit != 'true'
         run: npm ci
+
+      # Immediately after the install rather than in a post step: the other
+      # jobs in this workflow restore the same key, and a failure later in
+      # this job does not make the installed tree any less valid.
+      #
+      # `github.ref` is checked even though this workflow only triggers on
+      # main: workflow_dispatch can run it from any branch, and a cache saved
+      # from there would be unreadable by everything except that branch.
+      - name: Save node_modules
+        if: >-
+          github.ref == 'refs/heads/main'
+          && steps.node-modules-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            node_modules
+            apps/*/node_modules
+            packages/*/node_modules
+          key: node-modules-v2-${{ runner.os }}-node20-${{ hashFiles('package-lock.json') }}
 
       # Set up base and head refs for nx affected
       - name: Set base and head SHAs
@@ -113,7 +166,19 @@ jobs:
           node-version: '20'
           cache: 'npm'
 
+      # Restore-only: job 1 (`check`) is the writer. See its Save step for why.
+      - name: Restore node_modules
+        id: node-modules-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            node_modules
+            apps/*/node_modules
+            packages/*/node_modules
+          key: node-modules-v2-${{ runner.os }}-node20-${{ hashFiles('package-lock.json') }}
+
       - name: Install dependencies
+        if: steps.node-modules-cache.outputs.cache-hit != 'true'
         run: npm ci
 
       - name: Set base and head SHAs
@@ -211,24 +276,39 @@ jobs:
           node-version: '20'
           cache: 'npm'
 
+      # Restore-only: job 1 (`check`) is the writer. See its Save step for why.
+      - name: Restore node_modules
+        id: node-modules-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            node_modules
+            apps/*/node_modules
+            packages/*/node_modules
+          key: node-modules-v2-${{ runner.os }}-node20-${{ hashFiles('package-lock.json') }}
+
       - name: Install dependencies
+        if: steps.node-modules-cache.outputs.cache-hit != 'true'
         run: npm ci
 
-      # Same cache the CI workflow keeps, and it is the SAME nx cache: the
-      # `lint build` step below runs the identical cacheable targets CI already
-      # ran on this commit, so on a normal main-branch merge these are cache
-      # hits rather than a second full rebuild.
+      # Same nx cache CI keeps, written HERE rather than there: an nx cache
+      # only has contents once targets actually execute, and this is the job
+      # that runs `nx affected -t lint build` below -- CI cannot write it
+      # since it only restores. Rolling per-branch key, deleted and rewritten
+      # (see the Replace/Store steps after the build) rather than accumulating
+      # a new multi-hundred-MB entry per commit.
       #
       # Cache-miss is the safe direction -- a miss rebuilds, it does not deploy
       # something stale. Docker image builds in `publish` are not covered here;
       # they are not nx-cacheable and pull their own layer cache from the
       # registry.
-      - name: Cache nx computation
-        uses: actions/cache@v4
+      - name: Restore nx computation cache
+        uses: actions/cache/restore@v4
         with:
           path: .nx/cache
-          key: nx-${{ runner.os }}-${{ github.sha }}
+          key: nx-${{ runner.os }}-${{ github.ref_name }}
           restore-keys: |
+            nx-${{ runner.os }}-main
             nx-${{ runner.os }}-
 
       # Python and UV setup for backend projects
@@ -266,9 +346,42 @@ jobs:
       - name: Build and lint affected projects
         run: npx nx affected -t lint build --base=${{ env.NX_BASE }} --head=${{ env.NX_HEAD }}
 
+      # actions/cache/save refuses to overwrite an existing exact key, and a
+      # rolling key is the whole point -- so delete first. Ignore the failure:
+      # the entry legitimately may not exist yet.
+      - name: Replace nx computation cache
+        if: always() && github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NX_CACHE_KEY: nx-${{ runner.os }}-${{ github.ref_name }}
+        run: |
+          gh api --method DELETE "/repos/${{ github.repository }}/actions/caches?key=$NX_CACHE_KEY" || echo "no existing nx cache entry to replace"
+
+      - name: Store nx computation cache
+        if: always() && github.ref == 'refs/heads/main'
+        uses: actions/cache/save@v4
+        with:
+          path: .nx/cache
+          key: nx-${{ runner.os }}-${{ github.ref_name }}
+
       - name: Login to Docker Hub
         run: |
           echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+
+      # Required for the layer cache in each project's `publish` target.
+      # ubuntu-latest ships buildx, but its default `docker` driver cannot
+      # export a cache at all -- `--cache-to` is silently useless without a
+      # `docker-container` builder, which this action creates.
+      #
+      # The cache lives in the registry (a `:buildcache` tag beside the
+      # image), not GitHub Actions cache -- that store is capped per repo and
+      # an image layer-cache would put it straight back under pressure.
+      #
+      # Safe on the very first run, before any `:buildcache` tag exists: a
+      # missing --cache-from target fails the cache IMPORT and the build then
+      # continues normally.
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
       - name: Publish affected projects
         run: |
@@ -320,7 +433,19 @@ jobs:
           node-version: '20'
           cache: 'npm'
 
+      # Restore-only: job 1 (`check`) is the writer. See its Save step for why.
+      - name: Restore node_modules
+        id: node-modules-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            node_modules
+            apps/*/node_modules
+            packages/*/node_modules
+          key: node-modules-v2-${{ runner.os }}-node20-${{ hashFiles('package-lock.json') }}
+
       - name: Install dependencies
+        if: steps.node-modules-cache.outputs.cache-hit != 'true'
         run: npm ci
 
       # Setup kubectl and Helm for deployment

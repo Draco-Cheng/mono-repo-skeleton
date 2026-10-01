@@ -2,7 +2,12 @@ name: PR Validation
 
 on:
   pull_request:
-    types: [opened, edited, synchronize]
+    # No `synchronize`. This job reads ONLY the PR title, which a push cannot
+    # change -- `opened` and `edited` are the two events that can. Every job
+    # is billed as a whole minute however short it is, and this one finishes
+    # in a few seconds, so re-running it on each push wastes a full minute
+    # re-checking a string that had not moved.
+    types: [opened, edited]
 
 # Prevent duplicate runs for the same PR
 concurrency:

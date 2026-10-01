@@ -9,7 +9,7 @@ It describes the architecture, conventions, and best practices for the backend a
 
 - **Framework:** FastAPI
 - **Language:** Python 3.10+
-- **Dependency Management:** `pyproject.toml` (PEP 621), `uv` or `pip`
+- **Dependency Management:** `pyproject.toml` (PEP 621), `uv` (dev + CI + Docker image all install from `uv.lock` — `pip install .` re-resolves independently and silently drifts; see `tests/test_production_dependencies.py`)
 - **Virtual Environment:** `.venv` (auto-created by scripts)
 - **API Convention:** All endpoints are prefixed with `/api` (see `config.py`)
 - **Scripts:** Use root-level scripts for install/start (`scripts/`)
