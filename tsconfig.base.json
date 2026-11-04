@@ -20,6 +20,12 @@
     "target": "es2022",
     "customConditions": [
       "@mono-repo-skeleton/source"
-    ]
+    ],
+    "noUncheckedSideEffectImports": false,
+    "types": [
+      "*"
+    ],
+    "esModuleInterop": false,
+    "ignoreDeprecations": "6.0"
   }
 }
