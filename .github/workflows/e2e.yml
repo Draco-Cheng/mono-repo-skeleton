@@ -28,7 +28,7 @@ jobs:
       # Node.js setup & cache
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: 'npm'
 
       # Same installed-tree cache as ci.yml -- see that file for why the npm

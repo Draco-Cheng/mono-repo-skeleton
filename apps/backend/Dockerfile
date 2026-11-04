@@ -1,6 +1,10 @@
 # Backend Dockerfile for FastAPI
 # Build context: apps/backend/
-FROM python:3.11-slim AS base
+#
+# Python pinned to an exact patch so a stale local/CI tag cache cannot ship a
+# runtime missing a security fix. Floor: 3.11.18 (CVE-2026-115557, compromised
+# eMudhra intermediate CA keys; plus Expat and tarfile fixes).
+FROM python:3.11.18-slim AS base
 
 WORKDIR /app
 
@@ -36,6 +40,12 @@ RUN uv sync --frozen --no-dev --no-install-project
 FROM base AS production
 
 COPY . .
+
+# Unprivileged runtime user. Numeric uid, not the name: Kubernetes
+# `runAsNonRoot` can only verify a numeric USER and rejects the pod otherwise.
+# The app only reads /app, so the root-owned tree is fine.
+RUN useradd --uid 10001 --no-create-home --shell /usr/sbin/nologin app
+USER 10001:10001
 
 EXPOSE 8000
 
