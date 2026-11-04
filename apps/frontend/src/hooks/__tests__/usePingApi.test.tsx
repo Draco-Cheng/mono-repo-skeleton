@@ -7,8 +7,7 @@ describe('usePingApi', () => {
 			.mockResolvedValueOnce({ json: async () => ({ result: 'pong' }) })
 			.mockResolvedValueOnce({ json: async () => ({ result: 'pong-2' }) });
 
-		// @ts-expect-error override global fetch for test
-		global.fetch = mockFetch;
+		vi.stubGlobal('fetch', mockFetch);
 
 		const { result } = renderHook(() => usePingApi());
 
@@ -40,8 +39,7 @@ describe('usePingApi', () => {
 	it('handles fetch error', async () => {
 		const error = new Error('network');
 		const mockFetch = vi.fn().mockRejectedValueOnce(error);
-		// @ts-expect-error override global fetch for test
-		global.fetch = mockFetch;
+		vi.stubGlobal('fetch', mockFetch);
 
 		const { result } = renderHook(() => usePingApi());
 

@@ -7,36 +7,17 @@ It describes the architecture, conventions, and best practices for the frontend 
 
 ## Framework & Stack
 
-- **Framework:** Next.js 15+ (App Router)
+- **Framework:** Next.js 16 (App Router)
 - **Language:** TypeScript
 - **Styling:** CSS Modules (per component/page)
 - **Component Architecture:** Atomic Design (atoms, molecules, organisms, templates, pages)
 - **State/Logic:** Prefer custom React hooks (in `/src/hooks`)
-- **API Integration:** All API calls use `/api` prefix, proxied in dev via `next.config.ts`
+- **API Integration:** All API calls use `/api` prefix, proxied to backend at runtime by `src/proxy.ts` (strips `/api`)
 - **Routing:** All route files (`page.tsx`, `layout.tsx`) live in `src/app/` and subfolders
 
 ---
 
-## Directory Structure
 
-```
-apps/frontend/
-├── src/
-│   ├── app/                # Next.js routes, layouts, config
-│   │   ├── page.tsx        # Dashboard route
-│   │   ├── ping/page.tsx   # /ping route
-│   │   └── ...
-│   ├── components/
-│   │   ├── atoms/
-│   │   ├── molecules/
-│   │   ├── organisms/
-│   │   ├── templates/
-│   │   └── pages/
-│   └── hooks/              # Custom React hooks (e.g., usePingApi)
-└── ...
-```
-
----
 
 ## Conventions
 
@@ -53,6 +34,11 @@ apps/frontend/
 
 ---
 
+
+- `next dev` / `next build` MUST pass `--webpack` — `@serwist/next` is a webpack plugin; Next 16 Turbopack default breaks the service worker build.
+- Request interception lives in `src/proxy.ts` exporting `proxy` — Next 16 renamed middleware; never recreate `middleware.ts`.
+- Lint = plain `eslint .` (Next 16 removed `next lint`) — generated files must be in `globalIgnores`. See eslint.config.mjs.
+- Mock globals in tests with `vi.stubGlobal`, not `global.x =` + `@ts-expect-error`.
 ## Application-level Logic
 
 - Components using Next.js context (e.g., `usePathname`, navigation) should be placed in `templates/` or `pages/`, not in atomic folders.
