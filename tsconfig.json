@@ -6,5 +6,8 @@
     {
       "path": "./apps/frontend"
     }
-  ]
+  ],
+  "compilerOptions": {
+    "ignoreDeprecations": "6.0"
+  }
 }

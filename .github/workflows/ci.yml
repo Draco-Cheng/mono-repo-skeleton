@@ -44,7 +44,7 @@ jobs:
       # Node.js setup & cache
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: 'npm'
 
       # Cache the INSTALLED TREE, not just the downloaded tarballs.

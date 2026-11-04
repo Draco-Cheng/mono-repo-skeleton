@@ -75,3 +75,6 @@ test-output
 # secrets
 deploy_key**
 *secrets.yaml
+.nx/migrate-runs
+.nx/polygraph
+.nx/self-healing

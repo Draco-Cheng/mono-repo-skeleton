@@ -9,7 +9,7 @@ It describes the overall architecture, conventions, and best practices for this 
 
 - **Monorepo manager:** Nx
 - **Languages:** TypeScript (frontend), Python (backend)
-- **Frontend:** Next.js 15+ (App Router, Atomic Design, CSS Modules)
+- **Frontend:** Next.js 16 (App Router, Atomic Design, CSS Modules)
 - **Backend:** FastAPI (Python 3.11+)
 - **Component Architecture:** Atomic Design (atoms, molecules, organisms, templates, pages)
 - **API Convention:** All backend endpoints are prefixed with `/api`
@@ -18,21 +18,7 @@ It describes the overall architecture, conventions, and best practices for this 
 
 ---
 
-## Directory Structure
 
-```
-/
-├── apps/
-│   ├── backend/         # FastAPI backend (see apps/backend/AI_README.md)
-│   └── frontend/        # Next.js frontend (see apps/frontend/AI_README.md)
-├── packages/            # Shared JS/TS packages (if any)
-├── scripts/             # Cross-language install/start scripts
-├── AI_README.md         # (this file)
-├── README.md            # Human-facing project overview
-└── ...
-```
-
----
 
 ## General Conventions
 
@@ -43,6 +29,10 @@ It describes the overall architecture, conventions, and best practices for this 
 - **TypeScript:** Use strict typing, prefer interfaces for props and API responses.
 - **Python:** Use type hints, keep config in `config.py` or `pyproject.toml`.
 - **CI/CD, nx caching, release flow:** see [.github/AI_README.md](.github/AI_README.md)
+- **Docker base images:** pin exact patch (`node:22.23.4-alpine`, `python:3.11.18-slim`) — floating tags let a stale cache ship a runtime missing a CVE fix.
+- **Node floor:** 22 everywhere (Docker + CI) — Node 20 is EOL, no security patches.
+- **Containers run non-root with a NUMERIC `USER`** — helm sets `runAsNonRoot`, which rejects named users.
+- **Transitive CVE pins:** root `package.json` `overrides` (e.g. serwist's exact-pinned zod/glob) — drop once upstream bumps.
 
 ---
 
