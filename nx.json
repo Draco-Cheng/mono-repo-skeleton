@@ -138,5 +138,8 @@
       "conventionalCommits": true,
       "fallbackCurrentVersionResolver": "disk"
     }
+  },
+  "affected": {
+    "legacy": true
   }
 }
